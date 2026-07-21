@@ -1,50 +1,10 @@
-const STORAGE_KEY = "app_gastos_v6";
-
-const form = document.getElementById("expenseForm");
-const descriptionInput = document.getElementById("description");
-const amountInput = document.getElementById("amount");
-const dateInput = document.getElementById("date");
-const movementTypeInput = document.getElementById("movementType");
-const categoryInput = document.getElementById("category");
-const paymentInput = document.getElementById("paymentMethod");
-
-const totalIncomeEl = document.getElementById("totalIncome");
-const totalExpenseEl = document.getElementById("totalExpense");
-const totalBalanceEl = document.getElementById("totalBalance");
-const totalCountEl = document.getElementById("totalCount");
-
-const historyList = document.getElementById("historyList");
-const monthsOverview = document.getElementById("monthsOverview");
-
-const monthFilter = document.getElementById("monthFilter");
-const searchInput = document.getElementById("searchInput");
-const typeFilter = document.getElementById("typeFilter");
-const paymentFilter = document.getElementById("paymentFilter");
-const sortFilter = document.getElementById("sortFilter");
-
-const clearAllBtn = document.getElementById("clearAllBtn");
-const exportExcelBtn = document.getElementById("exportExcelBtn");
-
-const pageGastos = document.getElementById("page-gastos");
-const pageResumen = document.getElementById("page-resumen");
-const topLinks = document.querySelectorAll(".toplink");
-
-const typeGroup = document.getElementById("typeGroup");
-const categoryGroup = document.getElementById("categoryGroup");
-const paymentGroup = document.getElementById("paymentGroup");
-
-const openCategoryModalBtn = document.getElementById("openCategoryModal");
-const categoryModal = document.getElementById("categoryModal");
-const closeCategoryModalBtn = document.getElementById("closeCategoryModal");
-const allCategoriesGrid = document.getElementById("allCategoriesGrid");
-const modalSubtitle = document.getElementById("modalSubtitle");
-
-const editingBanner = document.getElementById("editingBanner");
-const cancelEditBtn = document.getElementById("cancelEdit");
-const submitButton = document.getElementById("submitButton");
-
+const STORAGE_KEY = "app_gastos_v7";
 const todayISO = () => new Date().toISOString().slice(0, 10);
-if (dateInput) dateInput.value = todayISO();
+
+const typeOptions = [
+  { value: "gasto", icon: "🟢", label: "gasto" },
+  { value: "ingreso", icon: "🔵", label: "ingreso" },
+];
 
 const categoriesByType = {
   gasto: [
@@ -55,15 +15,15 @@ const categoriesByType = {
     { value: "Pago de tarjetas", icon: "💳" },
     { value: "Medicina", icon: "💊" },
     { value: "Kiosko", icon: "🏪" },
-    { value: "Varios", icon: "🧾" }
+    { value: "Varios", icon: "🧾" },
   ],
   ingreso: [
     { value: "Sueldo", icon: "💰" },
     { value: "Transferencia", icon: "🏦" },
     { value: "Extra", icon: "⭐" },
     { value: "Ajuste", icon: "🧮" },
-    { value: "Otros ingresos", icon: "➕" }
-  ]
+    { value: "Otros ingresos", icon: "➕" },
+  ],
 };
 
 const paymentMethods = [
@@ -72,19 +32,60 @@ const paymentMethods = [
   { value: "Crédito", icon: "🪪" },
   { value: "Transferencia", icon: "🏦" },
   { value: "Mercado Pago", icon: "📲" },
-  { value: "Otro", icon: "⋯" }
+  { value: "Otro", icon: "⋯" },
 ];
 
-let movements = loadMovements();
-let editingId = null;
-let activeType = "gasto";
-let selectedCategory = "";
-let selectedPayment = "Efectivo";
-let selectedMonth = "all";
+const state = {
+  movements: loadMovements(),
+  activePage: "add",
+  activeType: "gasto",
+  selectedCategory: "",
+  selectedPayment: "Efectivo",
+  selectedMonth: "all",
+  editingId: null,
+  filters: {
+    search: "",
+    type: "all",
+    payment: "all",
+    sort: "newest",
+  },
+};
 
-function uid() {
-  return window.crypto?.randomUUID?.() || String(Date.now() + Math.random());
-}
+const el = {
+  topLinks: document.querySelectorAll(".toplink"),
+  pageAdd: document.getElementById("page-add"),
+  pageSummary: document.getElementById("page-summary"),
+  form: document.getElementById("expenseForm"),
+  submitButton: document.getElementById("submitButton"),
+  editingBanner: document.getElementById("editingBanner"),
+  cancelEdit: document.getElementById("cancelEdit"),
+  movementType: document.getElementById("movementType"),
+  description: document.getElementById("description"),
+  amount: document.getElementById("amount"),
+  category: document.getElementById("category"),
+  paymentMethod: document.getElementById("paymentMethod"),
+  typeGroup: document.getElementById("typeGroup"),
+  categoryGroup: document.getElementById("categoryGroup"),
+  paymentGroup: document.getElementById("paymentGroup"),
+  openCategoryModal: document.getElementById("openCategoryModal"),
+  categoryModal: document.getElementById("categoryModal"),
+  closeCategoryModal: document.getElementById("closeCategoryModal"),
+  modalSubtitle: document.getElementById("modalSubtitle"),
+  allCategoriesGrid: document.getElementById("allCategoriesGrid"),
+  monthFilter: document.getElementById("monthFilter"),
+  exportExcelBtn: document.getElementById("exportExcelBtn"),
+  totalIncome: document.getElementById("totalIncome"),
+  totalExpense: document.getElementById("totalExpense"),
+  totalBalance: document.getElementById("totalBalance"),
+  totalCount: document.getElementById("totalCount"),
+  monthsOverview: document.getElementById("monthsOverview"),
+  searchInput: document.getElementById("searchInput"),
+  typeFilter: document.getElementById("typeFilter"),
+  paymentFilter: document.getElementById("paymentFilter"),
+  sortFilter: document.getElementById("sortFilter"),
+  clearAllBtn: document.getElementById("clearAllBtn"),
+  historyList: document.getElementById("historyList"),
+};
 
 function loadMovements() {
   try {
@@ -97,88 +98,60 @@ function loadMovements() {
 }
 
 function saveMovements() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(movements));
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state.movements));
 }
 
-function setPage(page) {
-  const isAdd = page === "gastos";
-  pageGastos.classList.toggle("active", isAdd);
-  pageResumen.classList.toggle("active", !isAdd);
-
-  topLinks.forEach((btn) => {
-    btn.classList.toggle("active", btn.dataset.page === page);
-  });
+function uid() {
+  return window.crypto?.randomUUID?.() || String(Date.now() + Math.random());
 }
 
 function money(value) {
   return Number(value || 0).toLocaleString("es-AR", {
     style: "currency",
     currency: "ARS",
-    maximumFractionDigits: 2
+    maximumFractionDigits: 2,
   });
 }
 
 function dateDisplay(iso) {
   if (!iso) return "";
-  const [year, month, day] = iso.split("-");
-  return `${day}/${month}/${year}`;
+  const [y, m, d] = iso.split("-");
+  return `${d}/${m}/${y}`;
 }
 
-function monthKeyFromDate(isoDate) {
-  return (isoDate || "").slice(0, 7);
-}
-
-function currentMonthKey() {
-  return todayISO().slice(0, 7);
+function monthKeyFromDate(iso) {
+  return (iso || "").slice(0, 7);
 }
 
 function monthLabel(monthKey) {
   const [year, month] = monthKey.split("-").map(Number);
   const d = new Date(year, month - 1, 1);
-  const label = d.toLocaleDateString("es-AR", {
-    month: "long",
-    year: "numeric"
-  });
+  const label = d.toLocaleDateString("es-AR", { month: "long", year: "numeric" });
   return label.charAt(0).toUpperCase() + label.slice(1);
 }
 
-function computeStats(data) {
-  const income = data
-    .filter((m) => m.type === "ingreso")
-    .reduce((sum, m) => sum + Number(m.amount || 0), 0);
-
-  const expense = data
-    .filter((m) => m.type === "gasto")
-    .reduce((sum, m) => sum + Number(m.amount || 0), 0);
-
-  return {
-    income,
-    expense,
-    balance: income - expense,
-    count: data.length
-  };
+function computeStats(rows) {
+  const income = rows.filter((r) => r.type === "ingreso").reduce((sum, r) => sum + Number(r.amount || 0), 0);
+  const expense = rows.filter((r) => r.type === "gasto").reduce((sum, r) => sum + Number(r.amount || 0), 0);
+  return { income, expense, balance: income - expense, count: rows.length };
 }
 
-function getSortedCategories(type) {
-  const counts = {};
-  movements
-    .filter((m) => m.type === type)
-    .forEach((m) => {
-      counts[m.category] = (counts[m.category] || 0) + 1;
-    });
+function setPage(page) {
+  state.activePage = page;
+  el.pageAdd.classList.toggle("active", page === "add");
+  el.pageSummary.classList.toggle("active", page === "summary");
+  el.topLinks.forEach((btn) => btn.classList.toggle("active", btn.dataset.page === page));
+}
 
-  const list = categoriesByType[type].map((item, index) => ({
-    ...item,
-    order: index,
-    count: counts[item.value] || 0
-  }));
+function openCategoryModal() {
+  el.categoryModal.classList.add("open");
+  el.categoryModal.setAttribute("aria-hidden", "false");
+  renderCategoryModal();
+}
 
-  list.sort((a, b) => {
-    if (b.count !== a.count) return b.count - a.count;
-    return a.order - b.order;
-  });
-
-  return list;
+function closeCategoryModal() {
+  el.categoryModal.classList.remove("open");
+  el.categoryModal.setAttribute("aria-hidden", "true");
 }
 
 function setSelectedButton(group, value) {
@@ -187,30 +160,45 @@ function setSelectedButton(group, value) {
   });
 }
 
+function getSortedCategories(type) {
+  const usage = {};
+  state.movements.filter((m) => m.type === type).forEach((m) => {
+    usage[m.category] = (usage[m.category] || 0) + 1;
+  });
+
+  const list = categoriesByType[type].map((item, index) => ({ ...item, index, count: usage[item.value] || 0 }));
+  list.sort((a, b) => (b.count - a.count) || (a.index - b.index));
+  return list;
+}
+
 function renderTypeButtons() {
-  setSelectedButton(typeGroup, activeType);
+  el.typeGroup.innerHTML = "";
+  typeOptions.forEach((item) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = `icon-option ${item.value === state.activeType ? `type-${item.value} selected` : `type-${item.value}`}`;
+    btn.dataset.value = item.value;
+    btn.innerHTML = `<span class="emoji">${item.icon}</span><span class="btn-label">${item.label}</span>`;
+    el.typeGroup.appendChild(btn);
+  });
 }
 
 function renderCategoryButtons() {
-  const sorted = getSortedCategories(activeType);
+  const sorted = getSortedCategories(state.activeType);
   const visible = sorted.slice(0, 5);
 
-  if (!selectedCategory || !sorted.some((item) => item.value === selectedCategory)) {
-    selectedCategory = visible[0]?.value || "";
+  if (!state.selectedCategory || !sorted.some((item) => item.value === state.selectedCategory)) {
+    state.selectedCategory = visible[0]?.value || "";
   }
 
-  categoryGroup.innerHTML = "";
-
+  el.categoryGroup.innerHTML = "";
   visible.forEach((item) => {
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.className = `icon-option ${selectedCategory === item.value ? "selected" : ""}`;
+    btn.className = `icon-option ${state.selectedCategory === item.value ? "selected" : ""}`;
     btn.dataset.value = item.value;
-    btn.innerHTML = `
-      <span class="emoji">${item.icon}</span>
-      <span class="btn-label">${item.value}</span>
-    `;
-    categoryGroup.appendChild(btn);
+    btn.innerHTML = `<span class="emoji">${item.icon}</span><span class="btn-label">${item.value}</span>`;
+    el.categoryGroup.appendChild(btn);
   });
 
   if (sorted.length > visible.length) {
@@ -218,149 +206,115 @@ function renderCategoryButtons() {
     moreBtn.type = "button";
     moreBtn.className = "icon-option";
     moreBtn.dataset.value = "__more__";
-    moreBtn.innerHTML = `
-      <span class="emoji">⋯</span>
-      <span class="btn-label">más</span>
-    `;
-    categoryGroup.appendChild(moreBtn);
+    moreBtn.innerHTML = `<span class="emoji">⋯</span><span class="btn-label">más</span>`;
+    el.categoryGroup.appendChild(moreBtn);
   }
 
-  categoryInput.value = selectedCategory;
+  el.category.value = state.selectedCategory;
 }
 
-function renderCategoryModalButtons() {
-  const sorted = getSortedCategories(activeType);
-  modalSubtitle.textContent = `categorías de ${activeType}`;
-  allCategoriesGrid.innerHTML = "";
+function renderCategoryModal() {
+  const sorted = getSortedCategories(state.activeType);
+  el.modalSubtitle.textContent = `categorías de ${state.activeType}`;
+  el.allCategoriesGrid.innerHTML = "";
 
   sorted.forEach((item) => {
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.className = `icon-option ${selectedCategory === item.value ? "selected" : ""}`;
+    btn.className = `icon-option ${state.selectedCategory === item.value ? "selected" : ""}`;
     btn.dataset.value = item.value;
-    btn.innerHTML = `
-      <span class="emoji">${item.icon}</span>
-      <span class="btn-label">${item.value}</span>
-    `;
-    allCategoriesGrid.appendChild(btn);
+    btn.innerHTML = `<span class="emoji">${item.icon}</span><span class="btn-label">${item.value}</span>`;
+    el.allCategoriesGrid.appendChild(btn);
   });
 }
 
 function renderPaymentButtons() {
-  const counts = {};
-  movements.forEach((m) => {
-    counts[m.paymentMethod] = (counts[m.paymentMethod] || 0) + 1;
+  const usage = {};
+  state.movements.forEach((m) => {
+    usage[m.paymentMethod] = (usage[m.paymentMethod] || 0) + 1;
   });
 
-  const sorted = [...paymentMethods].sort((a, b) => {
-    const diff = (counts[b.value] || 0) - (counts[a.value] || 0);
-    if (diff !== 0) return diff;
-    return paymentMethods.findIndex((p) => p.value === a.value) - paymentMethods.findIndex((p) => p.value === b.value);
-  });
-
-  if (!selectedPayment || !sorted.some((item) => item.value === selectedPayment)) {
-    selectedPayment = sorted[0]?.value || "Efectivo";
+  const sorted = [...paymentMethods].sort((a, b) => (usage[b.value] || 0) - (usage[a.value] || 0));
+  if (!state.selectedPayment || !sorted.some((item) => item.value === state.selectedPayment)) {
+    state.selectedPayment = sorted[0]?.value || "Efectivo";
   }
 
-  paymentGroup.innerHTML = "";
-
+  el.paymentGroup.innerHTML = "";
   sorted.forEach((item) => {
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.className = `icon-option ${selectedPayment === item.value ? "selected" : ""}`;
+    btn.className = `icon-option ${state.selectedPayment === item.value ? "selected" : ""}`;
     btn.dataset.value = item.value;
-    btn.innerHTML = `
-      <span class="emoji">${item.icon}</span>
-      <span class="btn-label">${item.value}</span>
-    `;
-    paymentGroup.appendChild(btn);
+    btn.innerHTML = `<span class="emoji">${item.icon}</span><span class="btn-label">${item.value}</span>`;
+    el.paymentGroup.appendChild(btn);
   });
 
-  paymentInput.value = selectedPayment;
-}
-
-function openCategoryModal() {
-  categoryModal.classList.add("open");
-  categoryModal.setAttribute("aria-hidden", "false");
-  renderCategoryModalButtons();
-}
-
-function closeCategoryModal() {
-  categoryModal.classList.remove("open");
-  categoryModal.setAttribute("aria-hidden", "true");
+  el.paymentMethod.value = state.selectedPayment;
 }
 
 function resetForm() {
-  editingId = null;
-  descriptionInput.value = "";
-  amountInput.value = "";
-  dateInput.value = todayISO();
-  activeType = "gasto";
-  selectedCategory = getSortedCategories("gasto")[0]?.value || "";
-  selectedPayment = "Efectivo";
-  movementTypeInput.value = "gasto";
-  categoryInput.value = selectedCategory;
-  paymentInput.value = selectedPayment;
-  editingBanner.classList.add("hidden");
-  submitButton.textContent = "＋";
-  renderAll();
+  state.editingId = null;
+  el.description.value = "";
+  el.amount.value = "";
+  state.activeType = "gasto";
+  el.movementType.value = "gasto";
+  state.selectedCategory = getSortedCategories("gasto")[0]?.value || "";
+  state.selectedPayment = "Efectivo";
+  el.category.value = state.selectedCategory;
+  el.paymentMethod.value = state.selectedPayment;
+  el.editingBanner.classList.add("hidden");
+  el.submitButton.textContent = "＋";
+  renderUI();
 }
 
 function startEdit(movement) {
-  editingId = movement.id;
-  descriptionInput.value = movement.description;
-  amountInput.value = movement.amount;
-  dateInput.value = movement.date;
-  activeType = movement.type;
-  selectedCategory = movement.category;
-  selectedPayment = movement.paymentMethod;
-
-  movementTypeInput.value = activeType;
-  categoryInput.value = selectedCategory;
-  paymentInput.value = selectedPayment;
-
-  editingBanner.classList.remove("hidden");
-  submitButton.textContent = "guardar";
-  setPage("gastos");
-  renderAll();
-  descriptionInput.focus();
+  state.editingId = movement.id;
+  el.description.value = movement.description;
+  el.amount.value = movement.amount;
+  state.activeType = movement.type;
+  state.selectedCategory = movement.category;
+  state.selectedPayment = movement.paymentMethod;
+  el.movementType.value = movement.type;
+  el.category.value = movement.category;
+  el.paymentMethod.value = movement.paymentMethod;
+  el.editingBanner.classList.remove("hidden");
+  el.submitButton.textContent = "guardar";
+  setPage("add");
+  renderUI();
+  el.description.focus();
 }
 
 function cloneMovement(movement) {
-  movements.unshift({
-    ...movement,
-    id: uid(),
-    createdAt: Date.now()
-  });
+  state.movements.unshift({ ...movement, id: uid(), createdAt: Date.now() });
   saveMovements();
-  renderAll();
+  renderUI();
 }
 
 function deleteMovement(id) {
   if (!confirm("¿Eliminar este movimiento?")) return;
-  movements = movements.filter((m) => m.id !== id);
-  if (editingId === id) resetForm();
+  state.movements = state.movements.filter((m) => m.id !== id);
+  if (state.editingId === id) resetForm();
   saveMovements();
-  renderAll();
+  renderUI();
 }
 
 function clearAll() {
   if (!confirm("¿Eliminar todos los movimientos?")) return;
-  movements = [];
+  state.movements = [];
   saveMovements();
   resetForm();
 }
 
 function getActiveMonthData() {
-  if (selectedMonth === "all") return [...movements];
-  return movements.filter((m) => monthKeyFromDate(m.date) === selectedMonth);
+  if (state.selectedMonth === "all") return [...state.movements];
+  return state.movements.filter((m) => monthKeyFromDate(m.date) === state.selectedMonth);
 }
 
 function buildFilteredHistory() {
   const base = getActiveMonthData();
-  const term = searchInput.value.trim().toLowerCase();
-  const typeVal = typeFilter.value;
-  const paymentVal = paymentFilter.value;
+  const term = state.filters.search.trim().toLowerCase();
+  const typeVal = state.filters.type;
+  const paymentVal = state.filters.payment;
 
   let filtered = base.filter((m) => {
     const text = [m.description, m.category, m.paymentMethod, m.type, m.date].join(" ").toLowerCase();
@@ -370,7 +324,7 @@ function buildFilteredHistory() {
     return matchesTerm && matchesType && matchesPayment;
   });
 
-  switch (sortFilter.value) {
+  switch (state.filters.sort) {
     case "oldest":
       filtered.sort((a, b) => a.date.localeCompare(b.date) || (a.createdAt || 0) - (b.createdAt || 0));
       break;
@@ -396,32 +350,32 @@ function buildFilteredHistory() {
 }
 
 function populateMonthFilter() {
-  const months = [...new Set(movements.map((m) => monthKeyFromDate(m.date)).filter(Boolean))].sort((a, b) => b.localeCompare(a));
-  monthFilter.innerHTML = `<option value="all">todos los meses</option>`;
-  months.forEach((key) => {
+  const keys = [...new Set(state.movements.map((m) => monthKeyFromDate(m.date)).filter(Boolean))].sort((a, b) => b.localeCompare(a));
+  el.monthFilter.innerHTML = `<option value="all">todos los meses</option>`;
+  keys.forEach((key) => {
     const option = document.createElement("option");
     option.value = key;
     option.textContent = monthLabel(key);
-    monthFilter.appendChild(option);
+    el.monthFilter.appendChild(option);
   });
 
-  monthFilter.value = selectedMonth;
+  if (!keys.includes(state.selectedMonth) && state.selectedMonth !== "all") state.selectedMonth = "all";
+  el.monthFilter.value = state.selectedMonth;
 }
 
 function renderSummaryStats() {
   const data = getActiveMonthData();
   const stats = computeStats(data);
-
-  totalIncomeEl.textContent = money(stats.income);
-  totalExpenseEl.textContent = money(stats.expense);
-  totalBalanceEl.textContent = money(stats.balance);
-  totalCountEl.textContent = String(stats.count);
-  totalBalanceEl.className = stats.balance >= 0 ? "balance-positive" : "balance-negative";
+  el.totalIncome.textContent = money(stats.income);
+  el.totalExpense.textContent = money(stats.expense);
+  el.totalBalance.textContent = money(stats.balance);
+  el.totalBalance.className = stats.balance >= 0 ? "balance-positive" : "balance-negative";
+  el.totalCount.textContent = String(stats.count);
 }
 
 function renderMonthsOverview() {
   const groups = {};
-  movements.forEach((m) => {
+  state.movements.forEach((m) => {
     const key = monthKeyFromDate(m.date);
     if (!key) return;
     if (!groups[key]) groups[key] = [];
@@ -429,14 +383,12 @@ function renderMonthsOverview() {
   });
 
   const keys = Object.keys(groups).sort((a, b) => b.localeCompare(a));
-
   if (keys.length === 0) {
-    monthsOverview.innerHTML = '<div class="empty">todavía no hay movimientos cargados.</div>';
+    el.monthsOverview.innerHTML = '<div class="empty">todavía no hay movimientos cargados.</div>';
     return;
   }
 
-  monthsOverview.innerHTML = "";
-
+  el.monthsOverview.innerHTML = "";
   keys.forEach((key) => {
     const stats = computeStats(groups[key]);
     const card = document.createElement("div");
@@ -447,35 +399,24 @@ function renderMonthsOverview() {
         <div class="month-balance">${money(stats.balance)}</div>
       </div>
       <div class="month-metrics">
-        <div class="metric">
-          <span>ingresos</span>
-          <strong>${money(stats.income)}</strong>
-        </div>
-        <div class="metric">
-          <span>gastos</span>
-          <strong>${money(stats.expense)}</strong>
-        </div>
-        <div class="metric">
-          <span>movimientos</span>
-          <strong>${stats.count}</strong>
-        </div>
+        <div class="metric"><span>ingresos</span><strong>${money(stats.income)}</strong></div>
+        <div class="metric"><span>gastos</span><strong>${money(stats.expense)}</strong></div>
+        <div class="metric"><span>movimientos</span><strong>${stats.count}</strong></div>
       </div>
     `;
-    monthsOverview.appendChild(card);
+    el.monthsOverview.appendChild(card);
   });
 }
 
 function renderHistory() {
-  const data = buildFilteredHistory();
-
-  if (data.length === 0) {
-    historyList.innerHTML = '<div class="empty">no hay movimientos con esos filtros.</div>';
+  const rows = buildFilteredHistory();
+  if (rows.length === 0) {
+    el.historyList.innerHTML = '<div class="empty">no hay movimientos con esos filtros.</div>';
     return;
   }
 
-  historyList.innerHTML = "";
-
-  data.forEach((movement) => {
+  el.historyList.innerHTML = "";
+  rows.forEach((movement) => {
     const row = document.createElement("div");
     row.className = `movement ${movement.type}`;
     row.innerHTML = `
@@ -490,11 +431,8 @@ function renderHistory() {
           <strong class="desc">${movement.description}</strong>
         </div>
       </div>
-
       <div class="movement-actions">
-        <div class="amount ${movement.type}">
-          ${movement.type === "ingreso" ? "+" : "-"} ${money(movement.amount)}
-        </div>
+        <div class="amount ${movement.type}">${movement.type === "ingreso" ? "+" : "-"} ${money(movement.amount)}</div>
         <div class="btn-row">
           <button type="button" class="ghost" data-edit="${movement.id}">editar</button>
           <button type="button" class="ghost" data-dup="${movement.id}">duplicar</button>
@@ -502,7 +440,7 @@ function renderHistory() {
         </div>
       </div>
     `;
-    historyList.appendChild(row);
+    el.historyList.appendChild(row);
   });
 }
 
@@ -512,189 +450,210 @@ function exportExcel() {
     return;
   }
 
-  const historyRows = movements.map((m) => ({
+  const historyRows = state.movements.map((m) => ({
     Fecha: dateDisplay(m.date),
     Tipo: m.type,
     Categoria: m.category,
     Detalle: m.description,
     "Medio de pago": m.paymentMethod,
-    Monto: Number(m.amount)
+    Monto: Number(m.amount),
   }));
 
   const byMonth = {};
-  movements.forEach((m) => {
+  state.movements.forEach((m) => {
     const key = monthKeyFromDate(m.date);
     if (!key) return;
     if (!byMonth[key]) byMonth[key] = [];
     byMonth[key].push(m);
   });
 
-  const monthlyRows = Object.keys(byMonth)
-    .sort((a, b) => b.localeCompare(a))
-    .map((key) => {
-      const stats = computeStats(byMonth[key]);
-      return {
-        Mes: monthLabel(key),
-        Ingresos: stats.income,
-        Gastos: stats.expense,
-        Balance: stats.balance,
-        Movimientos: stats.count
-      };
-    });
+  const monthlyRows = Object.keys(byMonth).sort((a, b) => b.localeCompare(a)).map((key) => {
+    const stats = computeStats(byMonth[key]);
+    return {
+      Mes: monthLabel(key),
+      Ingresos: stats.income,
+      Gastos: stats.expense,
+      Balance: stats.balance,
+      Movimientos: stats.count,
+    };
+  });
 
   const wb = XLSX.utils.book_new();
-  const ws1 = XLSX.utils.json_to_sheet(historyRows);
-  const ws2 = XLSX.utils.json_to_sheet(monthlyRows);
-
-  XLSX.utils.book_append_sheet(wb, ws1, "Historial");
-  XLSX.utils.book_append_sheet(wb, ws2, "Resumen mensual");
-
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(historyRows), "Historial");
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(monthlyRows), "Resumen mensual");
   XLSX.writeFile(wb, `app-gastos-${todayISO()}.xlsx`);
 }
 
-function renderAll() {
-  populateMonthFilter();
+function renderUI() {
+  setSelectedButton(el.typeGroup, state.activeType);
   renderTypeButtons();
   renderCategoryButtons();
-  renderCategoryModalButtons();
   renderPaymentButtons();
+  populateMonthFilter();
   renderSummaryStats();
   renderMonthsOverview();
   renderHistory();
 }
 
-form.addEventListener("submit", (e) => {
+el.topLinks.forEach((btn) => btn.addEventListener("click", () => setPage(btn.dataset.page)));
+
+el.form.addEventListener("submit", (e) => {
   e.preventDefault();
 
-  const description = descriptionInput.value.trim();
-  const amount = Number(amountInput.value);
-
+  const description = el.description.value.trim();
+  const amount = Number(el.amount.value);
   if (!description || !amount || amount <= 0) return;
 
   const payload = {
-    id: editingId || uid(),
-    type: movementTypeInput.value,
+    id: state.editingId || uid(),
+    type: el.movementType.value,
     description,
     amount,
-    category: categoryInput.value,
-    paymentMethod: paymentInput.value,
-    date: dateInput.value || todayISO(),
-    createdAt: Date.now()
+    category: el.category.value,
+    paymentMethod: el.paymentMethod.value,
+    date: todayISO(),
+    createdAt: Date.now(),
   };
 
-  if (editingId) {
-    movements = movements.map((m) => (m.id === editingId ? payload : m));
+  if (state.editingId) {
+    const index = state.movements.findIndex((m) => m.id === state.editingId);
+    if (index >= 0) state.movements[index] = { ...state.movements[index], ...payload, createdAt: state.movements[index].createdAt || Date.now() };
   } else {
-    movements.unshift(payload);
+    state.movements.unshift(payload);
   }
 
   saveMovements();
-  resetForm();
+  state.editingId = null;
+  el.editingBanner.classList.add("hidden");
+  el.submitButton.textContent = "＋";
+  el.description.value = "";
+  el.amount.value = "";
+  state.activeType = "gasto";
+  state.selectedCategory = getSortedCategories("gasto")[0]?.value || "";
+  state.selectedPayment = "Efectivo";
+  el.movementType.value = "gasto";
+  el.category.value = state.selectedCategory;
+  el.paymentMethod.value = state.selectedPayment;
+  renderUI();
 });
 
-typeGroup.addEventListener("click", (e) => {
+el.typeGroup.addEventListener("click", (e) => {
   const btn = e.target.closest(".icon-option");
   if (!btn) return;
-
   const value = btn.dataset.value;
   if (value !== "gasto" && value !== "ingreso") return;
-
-  activeType = value;
-  movementTypeInput.value = value;
-  selectedCategory = getSortedCategories(value)[0]?.value || "";
-  renderAll();
+  state.activeType = value;
+  el.movementType.value = value;
+  state.selectedCategory = getSortedCategories(value)[0]?.value || "";
+  renderUI();
 });
 
-categoryGroup.addEventListener("click", (e) => {
+el.categoryGroup.addEventListener("click", (e) => {
   const btn = e.target.closest(".icon-option");
   if (!btn) return;
-
-  if (btn.dataset.value === "__more__") {
-    openCategoryModal();
-    return;
-  }
-
-  selectedCategory = btn.dataset.value;
-  categoryInput.value = selectedCategory;
-  renderAll();
+  if (btn.dataset.value === "__more__") return openCategoryModal();
+  state.selectedCategory = btn.dataset.value;
+  el.category.value = state.selectedCategory;
+  renderUI();
 });
 
-paymentGroup.addEventListener("click", (e) => {
+el.paymentGroup.addEventListener("click", (e) => {
   const btn = e.target.closest(".icon-option");
   if (!btn) return;
-
-  selectedPayment = btn.dataset.value;
-  paymentInput.value = selectedPayment;
-  renderAll();
+  state.selectedPayment = btn.dataset.value;
+  el.paymentMethod.value = state.selectedPayment;
+  renderUI();
 });
 
-allCategoriesGrid.addEventListener("click", (e) => {
+el.allCategoriesGrid.addEventListener("click", (e) => {
   const btn = e.target.closest(".icon-option");
   if (!btn) return;
-
-  selectedCategory = btn.dataset.value;
-  categoryInput.value = selectedCategory;
+  state.selectedCategory = btn.dataset.value;
+  el.category.value = state.selectedCategory;
   closeCategoryModal();
-  renderAll();
+  renderUI();
 });
 
-historyList.addEventListener("click", (e) => {
+el.historyList.addEventListener("click", (e) => {
   const editBtn = e.target.closest("[data-edit]");
   const dupBtn = e.target.closest("[data-dup]");
   const delBtn = e.target.closest("[data-del]");
 
   if (editBtn) {
-    const movement = movements.find((m) => m.id === editBtn.dataset.edit);
-    if (movement) startEdit(movement);
+    const movement = state.movements.find((m) => m.id === editBtn.dataset.edit);
+    if (!movement) return;
+    state.editingId = movement.id;
+    state.activeType = movement.type;
+    state.selectedCategory = movement.category;
+    state.selectedPayment = movement.paymentMethod;
+    el.movementType.value = movement.type;
+    el.category.value = movement.category;
+    el.paymentMethod.value = movement.paymentMethod;
+    el.description.value = movement.description;
+    el.amount.value = movement.amount;
+    el.editingBanner.classList.remove("hidden");
+    el.submitButton.textContent = "guardar";
+    setPage("add");
+    renderUI();
+    el.description.focus();
     return;
   }
 
   if (dupBtn) {
-    const movement = movements.find((m) => m.id === dupBtn.dataset.dup);
+    const movement = state.movements.find((m) => m.id === dupBtn.dataset.dup);
     if (!movement) return;
-    movements.unshift({
-      ...movement,
-      id: uid(),
-      date: todayISO(),
-      createdAt: Date.now()
-    });
+    state.movements.unshift({ ...movement, id: uid(), date: todayISO(), createdAt: Date.now() });
     saveMovements();
-    renderAll();
+    renderUI();
     return;
   }
 
-  if (delBtn) {
-    deleteMovement(delBtn.dataset.del);
+  if (delBtn) deleteMovement(delBtn.dataset.del);
+});
+
+function deleteMovement(id) {
+  if (!confirm("¿Eliminar este movimiento?")) return;
+  state.movements = state.movements.filter((m) => m.id !== id);
+  if (state.editingId === id) {
+    state.editingId = null;
+    el.editingBanner.classList.add("hidden");
+    el.submitButton.textContent = "＋";
   }
-});
+  saveMovements();
+  renderUI();
+}
 
-topLinks.forEach((btn) => {
-  btn.addEventListener("click", () => setPage(btn.dataset.page));
-});
-
-openCategoryModalBtn.addEventListener("click", openCategoryModal);
-closeCategoryModalBtn.addEventListener("click", closeCategoryModal);
-categoryModal.addEventListener("click", (e) => {
+el.openCategoryModal.addEventListener("click", openCategoryModal);
+el.closeCategoryModal.addEventListener("click", closeCategoryModal);
+el.categoryModal.addEventListener("click", (e) => {
   if (e.target?.dataset?.closeModal) closeCategoryModal();
 });
-document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape") closeCategoryModal();
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeCategoryModal(); });
+
+el.cancelEdit.addEventListener("click", () => {
+  state.editingId = null;
+  el.description.value = "";
+  el.amount.value = "";
+  el.editingBanner.classList.add("hidden");
+  el.submitButton.textContent = "＋";
+  renderUI();
 });
 
-monthFilter.addEventListener("change", () => {
-  selectedMonth = monthFilter.value;
+el.monthFilter.addEventListener("change", () => {
+  state.selectedMonth = el.monthFilter.value;
   renderSummaryStats();
   renderHistory();
 });
 
-searchInput.addEventListener("input", renderHistory);
-typeFilter.addEventListener("change", renderHistory);
-paymentFilter.addEventListener("change", renderHistory);
-sortFilter.addEventListener("change", renderHistory);
-clearAllBtn.addEventListener("click", clearAll);
-exportExcelBtn.addEventListener("click", exportExcel);
-cancelEditBtn.addEventListener("click", resetForm);
+el.searchInput.addEventListener("input", () => { state.filters.search = el.searchInput.value; renderHistory(); });
+el.typeFilter.addEventListener("change", () => { state.filters.type = el.typeFilter.value; renderHistory(); });
+el.paymentFilter.addEventListener("change", () => { state.filters.payment = el.paymentFilter.value; renderHistory(); });
+el.sortFilter.addEventListener("change", () => { state.filters.sort = el.sortFilter.value; renderHistory(); });
+el.clearAllBtn.addEventListener("click", clearAll);
+el.exportExcelBtn.addEventListener("click", exportExcel);
 
-setPage("gastos");
-resetForm();
-renderAll();
+setPage("add");
+state.selectedCategory = getSortedCategories("gasto")[0]?.value || "";
+el.category.value = state.selectedCategory;
+el.paymentMethod.value = state.selectedPayment;
+renderUI();
