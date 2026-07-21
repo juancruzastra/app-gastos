@@ -3,177 +3,129 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#0b0f17" />
     <title>App Gastos</title>
+    <meta name="theme-color" content="#0b0f17" />
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
-    <div class="app-shell">
-      <header class="topbar">
-        <button class="toplink active" data-page="add" type="button">agregar</button>
-        <span class="slash">/</span>
-        <button class="toplink" data-page="summary" type="button">resumen</button>
-      </header>
+    <div class="app">
+      <div class="container">
+        <header class="topbar">
+          <button class="toplink active" data-page="gastos" type="button">agregar</button>
+          <span class="slash">/</span>
+          <button class="toplink" data-page="resumen" type="button">resumen</button>
+        </header>
 
-      <main class="container">
-        <section id="page-add" class="page active">
-          <div class="card">
-            <div class="hero">
-              <p class="eyebrow">app gastos</p>
-              <h1 class="title">cargar movimiento</h1>
-            </div>
-
-            <div id="editingBanner" class="editing-banner hidden">
-              <span>editando movimiento</span>
-              <button id="cancelEdit" type="button" class="link-btn">cancelar</button>
-            </div>
-
-            <form id="expenseForm" class="form">
-              <div class="field">
-                <label>tipo</label>
-                <div id="typeGroup" class="icon-grid type-grid"></div>
-                <input type="hidden" id="movementType" value="gasto" />
+        <main>
+          <section id="page-gastos" class="page active">
+            <div class="card">
+              <div class="hero">
+                <p class="eyebrow">app gastos</p>
+                <h1 class="title">cargar movimiento</h1>
               </div>
 
-              <div class="field">
-                <label for="description">detalle</label>
-                <input id="description" type="text" placeholder="ej: combustible, sueldo, café..." autocomplete="off" required />
-              </div>
-
-              <div class="field">
-                <label for="amount">monto</label>
-                <input id="amount" type="number" min="0" step="0.01" placeholder="0.00" required />
-              </div>
-
-              <div class="field">
-                <div class="field-head">
-                  <label>categoría</label>
-                  <button id="openCategoryModal" type="button" class="link-btn">más</button>
+              <form id="expenseForm" class="form">
+                <div class="field">
+                  <label>tipo</label>
+                  <div class="icon-grid type-grid" id="typeGroup">
+                    <button type="button" class="icon-option selected type-gasto" data-value="gasto">
+                      <span class="emoji">🟢</span>
+                      <span class="btn-label">gasto</span>
+                    </button>
+                    <button type="button" class="icon-option type-ingreso" data-value="ingreso">
+                      <span class="emoji">🔵</span>
+                      <span class="btn-label">ingreso</span>
+                    </button>
+                  </div>
+                  <input type="hidden" id="movementType" value="gasto" />
                 </div>
-                <div id="categoryGroup" class="icon-grid category-grid"></div>
-                <input type="hidden" id="category" />
+
+                <div class="field">
+                  <label for="description">detalle</label>
+                  <input
+                    type="text"
+                    id="description"
+                    placeholder="ej: combustible, sueldo, café..."
+                    autocomplete="off"
+                    required
+                  />
+                </div>
+
+                <div class="field">
+                  <label for="amount">monto</label>
+                  <input
+                    type="number"
+                    id="amount"
+                    min="0"
+                    step="0.01"
+                    placeholder="0.00"
+                    required
+                  />
+                </div>
+
+                <div class="field">
+                  <label>categoría</label>
+                  <div class="icon-grid category-grid" id="categoryGroup"></div>
+                  <input type="hidden" id="category" />
+                </div>
+
+                <div class="field">
+                  <label>medio de pago</label>
+                  <div class="icon-grid payment-grid" id="paymentGroup"></div>
+                  <input type="hidden" id="paymentMethod" />
+                </div>
+
+                <button type="submit" class="add-btn">＋</button>
+              </form>
+            </div>
+          </section>
+
+          <section id="page-resumen" class="page">
+            <div class="card">
+              <div class="section-head">
+                <div>
+                  <h2 class="section-title">resumen</h2>
+                  <p class="muted">balance y movimientos</p>
+                </div>
               </div>
 
-              <div class="field">
-                <label>medio de pago</label>
-                <div id="paymentGroup" class="icon-grid payment-grid"></div>
-                <input type="hidden" id="paymentMethod" />
-              </div>
-
-              <div class="actions">
-                <button id="submitButton" class="add-btn" type="submit">＋</button>
-              </div>
-            </form>
-          </div>
-        </section>
-
-        <section id="page-summary" class="page">
-          <div class="card">
-            <div class="section-head">
-              <div>
-                <h2 class="section-title">resumen</h2>
-                <p class="muted">balance, meses e historial</p>
-              </div>
-              <div class="summary-actions">
-                <select id="monthFilter" class="select"></select>
-                <button id="exportExcelBtn" type="button" class="secondary">exportar excel</button>
+              <div class="stats">
+                <div class="stat stat-income">
+                  <span>ingresos</span>
+                  <strong id="totalIncome">$0</strong>
+                </div>
+                <div class="stat stat-expense">
+                  <span>gastos</span>
+                  <strong id="totalExpense">$0</strong>
+                </div>
+                <div class="stat stat-balance">
+                  <span>balance</span>
+                  <strong id="totalBalance">$0</strong>
+                </div>
+                <div class="stat">
+                  <span>movimientos</span>
+                  <strong id="totalCount">0</strong>
+                </div>
               </div>
             </div>
 
-            <div class="stats">
-              <div class="stat stat-income">
-                <span>ingresos</span>
-                <strong id="totalIncome">$0</strong>
+            <div class="card">
+              <div class="section-head">
+                <div>
+                  <h2 class="section-title">historial</h2>
+                  <p class="muted">editar o borrar movimientos</p>
+                </div>
               </div>
-              <div class="stat stat-expense">
-                <span>gastos</span>
-                <strong id="totalExpense">$0</strong>
-              </div>
-              <div class="stat stat-balance">
-                <span>balance</span>
-                <strong id="totalBalance">$0</strong>
-              </div>
-              <div class="stat">
-                <span>movimientos</span>
-                <strong id="totalCount">0</strong>
+
+              <div id="historyList" class="list">
+                <div class="empty">todavía no hay movimientos cargados.</div>
               </div>
             </div>
-          </div>
-
-          <div class="card">
-            <div class="section-head">
-              <div>
-                <h2 class="section-title">meses</h2>
-                <p class="muted">separación mensual automática</p>
-              </div>
-            </div>
-            <div id="monthsOverview" class="month-overview"></div>
-          </div>
-
-          <div class="card">
-            <div class="section-head">
-              <div>
-                <h2 class="section-title">historial</h2>
-                <p class="muted">filtrar, ordenar y editar movimientos</p>
-              </div>
-            </div>
-
-            <div class="filters">
-              <input id="searchInput" class="search" type="search" placeholder="buscar detalle, categoría o pago..." autocomplete="off" />
-
-              <div class="filters-row">
-                <select id="typeFilter" class="select">
-                  <option value="all">todos</option>
-                  <option value="gasto">gastos</option>
-                  <option value="ingreso">ingresos</option>
-                </select>
-
-                <select id="paymentFilter" class="select">
-                  <option value="all">todo medio</option>
-                  <option value="Efectivo">efectivo</option>
-                  <option value="Débito">débito</option>
-                  <option value="Crédito">crédito</option>
-                  <option value="Transferencia">transferencia</option>
-                  <option value="Mercado Pago">mercado pago</option>
-                  <option value="Otro">otro</option>
-                </select>
-              </div>
-
-              <div class="filters-row">
-                <select id="sortFilter" class="select">
-                  <option value="newest">más reciente</option>
-                  <option value="oldest">más antiguo</option>
-                  <option value="amount_desc">mayor monto</option>
-                  <option value="amount_asc">menor monto</option>
-                  <option value="az">a-z</option>
-                  <option value="za">z-a</option>
-                </select>
-
-                <button id="clearAllBtn" type="button" class="secondary danger-outline">limpiar todo</button>
-              </div>
-            </div>
-
-            <div id="historyList" class="list"></div>
-          </div>
-        </section>
-      </main>
-    </div>
-
-    <div id="categoryModal" class="modal" aria-hidden="true">
-      <div class="modal-backdrop" data-close-modal="true"></div>
-      <div class="modal-card">
-        <div class="modal-head">
-          <div>
-            <h3 class="modal-title">más categorías</h3>
-            <p id="modalSubtitle" class="muted">elegí una categoría</p>
-          </div>
-          <button id="closeCategoryModal" type="button" class="secondary modal-close">×</button>
-        </div>
-        <div id="allCategoriesGrid" class="icon-grid modal-grid"></div>
+          </section>
+        </main>
       </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
     <script src="script.js"></script>
   </body>
 </html>
