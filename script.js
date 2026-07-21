@@ -11,7 +11,6 @@ const totalIncomeEl = document.getElementById("totalIncome");
 const totalExpenseEl = document.getElementById("totalExpense");
 const totalBalanceEl = document.getElementById("totalBalance");
 const totalCountEl = document.getElementById("totalCount");
-
 const historyList = document.getElementById("historyList");
 
 const pageGastos = document.getElementById("page-gastos");
@@ -21,31 +20,33 @@ const topLinks = document.querySelectorAll(".toplink");
 const typeGroup = document.getElementById("typeGroup");
 const categoryGroup = document.getElementById("categoryGroup");
 const paymentGroup = document.getElementById("paymentGroup");
+const exportExcelBtn = document.getElementById("exportExcelBtn");
 
 const categoriesByType = {
   gasto: [
-    { value: "Combustible", icon: "⛽" },
-    { value: "Supermercado", icon: "🛒" },
-    { value: "Alquiler", icon: "🏠" },
-    { value: "Servicios", icon: "💡" },
-    { value: "Pago de tarjetas", icon: "💳" },
-    { value: "Medicina", icon: "💊" }
+    { value: "Alquiler" },
+    { value: "Servicios" },
+    { value: "Pago de tarjetas" },
+    { value: "Medicina" },
+    { value: "Kiosko" },
+    { value: "Varios" },
+    { value: "Combustible" },
+    { value: "Supermercado" }
   ],
   ingreso: [
-    { value: "Sueldo", icon: "💰" },
-    { value: "Transferencia", icon: "🏦" },
-    { value: "Extra", icon: "⭐" },
-    { value: "Otro ingreso", icon: "➕" }
+    { value: "Sueldo" },
+    { value: "Transferencia" },
+    { value: "Otro ingreso" }
   ]
 };
 
 const paymentMethods = [
-  { value: "Efectivo", icon: "💵" },
-  { value: "Débito", icon: "💳" },
-  { value: "Crédito", icon: "🪪" },
-  { value: "Transferencia", icon: "🏦" },
-  { value: "Mercado Pago", icon: "📲" },
-  { value: "Otro", icon: "⋯" }
+  { value: "Efectivo" },
+  { value: "Débito" },
+  { value: "Crédito" },
+  { value: "Transferencia" },
+  { value: "Mercado Pago" },
+  { value: "Otro" }
 ];
 
 let movements = loadMovements();
@@ -123,10 +124,7 @@ function renderCategoryButtons() {
     btn.type = "button";
     btn.className = `icon-option ${selectedCategory === item.value ? "selected" : ""}`;
     btn.dataset.value = item.value;
-    btn.innerHTML = `
-      <span class="emoji">${item.icon}</span>
-      <span class="btn-label">${item.value}</span>
-    `;
+    btn.innerHTML = `<span class="btn-label">${item.value}</span>`;
     categoryGroup.appendChild(btn);
   });
 
@@ -145,10 +143,7 @@ function renderPaymentButtons() {
     btn.type = "button";
     btn.className = `icon-option ${selectedPayment === item.value ? "selected" : ""}`;
     btn.dataset.value = item.value;
-    btn.innerHTML = `
-      <span class="emoji">${item.icon}</span>
-      <span class="btn-label">${item.value}</span>
-    `;
+    btn.innerHTML = `<span class="btn-label">${item.value}</span>`;
     paymentGroup.appendChild(btn);
   });
 
@@ -258,6 +253,40 @@ function deleteMovement(id) {
   renderAll();
 }
 
+function exportExcel() {
+  if (typeof XLSX === "undefined") {
+    alert("No se pudo cargar la librería de Excel.");
+    return;
+  }
+
+  const rows = movements.map((m) => ({
+    Fecha: dateDisplay(m.date),
+    Tipo: m.type,
+    Categoria: m.category,
+    Detalle: m.description,
+    "Medio de pago": m.paymentMethod,
+    Monto: Number(m.amount)
+  }));
+
+  const summary = [
+    {
+      Ingresos: computeStats().income,
+      Gastos: computeStats().expense,
+      Balance: computeStats().balance,
+      Movimientos: computeStats().count
+    }
+  ];
+
+  const wb = XLSX.utils.book_new();
+  const ws1 = XLSX.utils.json_to_sheet(rows);
+  const ws2 = XLSX.utils.json_to_sheet(summary);
+
+  XLSX.utils.book_append_sheet(wb, ws1, "Historial");
+  XLSX.utils.book_append_sheet(wb, ws2, "Resumen");
+
+  XLSX.writeFile(wb, `app-gastos-${dateISO()}.xlsx`);
+}
+
 form.addEventListener("submit", (e) => {
   e.preventDefault();
 
@@ -284,7 +313,6 @@ form.addEventListener("submit", (e) => {
 
   saveMovements();
   resetForm();
-  setPage("resumen");
 });
 
 typeGroup.addEventListener("click", (e) => {
@@ -332,6 +360,8 @@ historyList.addEventListener("click", (e) => {
 topLinks.forEach((btn) => {
   btn.addEventListener("click", () => setPage(btn.dataset.page));
 });
+
+exportExcelBtn.addEventListener("click", exportExcel);
 
 setPage("gastos");
 renderAll();
