@@ -55,15 +55,15 @@ const categoriesByType = {
     { value: "Pago de tarjetas", icon: "💳" },
     { value: "Medicina", icon: "💊" },
     { value: "Kiosko", icon: "🏪" },
-    { value: "Varios", icon: "🧾" },
+    { value: "Varios", icon: "🧾" }
   ],
   ingreso: [
     { value: "Sueldo", icon: "💰" },
     { value: "Transferencia", icon: "🏦" },
     { value: "Extra", icon: "⭐" },
     { value: "Ajuste", icon: "🧮" },
-    { value: "Otros ingresos", icon: "➕" },
-  ],
+    { value: "Otros ingresos", icon: "➕" }
+  ]
 };
 
 const paymentMethods = [
@@ -72,7 +72,7 @@ const paymentMethods = [
   { value: "Crédito", icon: "🪪" },
   { value: "Transferencia", icon: "🏦" },
   { value: "Mercado Pago", icon: "📲" },
-  { value: "Otro", icon: "⋯" },
+  { value: "Otro", icon: "⋯" }
 ];
 
 let movements = loadMovements();
@@ -80,7 +80,7 @@ let editingId = null;
 let activeType = "gasto";
 let selectedCategory = "";
 let selectedPayment = "Efectivo";
-let selectedMonth = currentMonthKey();
+let selectedMonth = "all";
 
 function uid() {
   return window.crypto?.randomUUID?.() || String(Date.now() + Math.random());
@@ -114,7 +114,7 @@ function money(value) {
   return Number(value || 0).toLocaleString("es-AR", {
     style: "currency",
     currency: "ARS",
-    maximumFractionDigits: 2,
+    maximumFractionDigits: 2
   });
 }
 
@@ -124,12 +124,12 @@ function dateDisplay(iso) {
   return `${day}/${month}/${year}`;
 }
 
-function currentMonthKey() {
-  return todayISO().slice(0, 7);
-}
-
 function monthKeyFromDate(isoDate) {
   return (isoDate || "").slice(0, 7);
+}
+
+function currentMonthKey() {
+  return todayISO().slice(0, 7);
 }
 
 function monthLabel(monthKey) {
@@ -137,43 +137,48 @@ function monthLabel(monthKey) {
   const d = new Date(year, month - 1, 1);
   const label = d.toLocaleDateString("es-AR", {
     month: "long",
-    year: "numeric",
+    year: "numeric"
   });
   return label.charAt(0).toUpperCase() + label.slice(1);
 }
 
-function getUniqueMonths() {
-  const keys = [...new Set(movements.map((m) => monthKeyFromDate(m.date)).filter(Boolean))];
-  keys.sort((a, b) => b.localeCompare(a));
-  const current = currentMonthKey();
-  if (!keys.includes(current)) keys.unshift(current);
-  return keys;
+function computeStats(data) {
+  const income = data
+    .filter((m) => m.type === "ingreso")
+    .reduce((sum, m) => sum + Number(m.amount || 0), 0);
+
+  const expense = data
+    .filter((m) => m.type === "gasto")
+    .reduce((sum, m) => sum + Number(m.amount || 0), 0);
+
+  return {
+    income,
+    expense,
+    balance: income - expense,
+    count: data.length
+  };
 }
 
-function getCategoryCounts(type) {
+function getSortedCategories(type) {
   const counts = {};
   movements
     .filter((m) => m.type === type)
     .forEach((m) => {
       counts[m.category] = (counts[m.category] || 0) + 1;
     });
-  return counts;
-}
 
-function getSortedCategories(type) {
-  const counts = getCategoryCounts(type);
-  const defaults = categoriesByType[type].map((item, index) => ({
+  const list = categoriesByType[type].map((item, index) => ({
     ...item,
     order: index,
-    count: counts[item.value] || 0,
+    count: counts[item.value] || 0
   }));
 
-  defaults.sort((a, b) => {
-    if ((b.count || 0) !== (a.count || 0)) return (b.count || 0) - (a.count || 0);
+  list.sort((a, b) => {
+    if (b.count !== a.count) return b.count - a.count;
     return a.order - b.order;
   });
 
-  return defaults;
+  return list;
 }
 
 function setSelectedButton(group, value) {
@@ -183,15 +188,7 @@ function setSelectedButton(group, value) {
 }
 
 function renderTypeButtons() {
-  typeGroup.querySelectorAll(".icon-option").forEach((button) => {
-    button.addEventListener("click", () => {
-      activeType = button.dataset.value;
-      movementTypeInput.value = activeType;
-      setSelectedButton(typeGroup, activeType);
-      renderCategoryButtons();
-      renderCategoryModalButtons();
-    });
-  });
+  setSelectedButton(typeGroup, activeType);
 }
 
 function renderCategoryButtons() {
@@ -199,40 +196,33 @@ function renderCategoryButtons() {
   const visible = sorted.slice(0, 5);
 
   if (!selectedCategory || !sorted.some((item) => item.value === selectedCategory)) {
-    selectedCategory = visible[0]?.value || sorted[0]?.value || "";
+    selectedCategory = visible[0]?.value || "";
   }
 
   categoryGroup.innerHTML = "";
 
   visible.forEach((item) => {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = `icon-option ${selectedCategory === item.value ? "selected" : ""}`;
-    button.dataset.value = item.value;
-    button.innerHTML = `
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = `icon-option ${selectedCategory === item.value ? "selected" : ""}`;
+    btn.dataset.value = item.value;
+    btn.innerHTML = `
       <span class="emoji">${item.icon}</span>
       <span class="btn-label">${item.value}</span>
     `;
-
-    button.addEventListener("click", () => {
-      selectedCategory = item.value;
-      categoryInput.value = item.value;
-      renderCategoryButtons();
-    });
-
-    categoryGroup.appendChild(button);
+    categoryGroup.appendChild(btn);
   });
 
   if (sorted.length > visible.length) {
-    const moreButton = document.createElement("button");
-    moreButton.type = "button";
-    moreButton.className = "icon-option";
-    moreButton.innerHTML = `
+    const moreBtn = document.createElement("button");
+    moreBtn.type = "button";
+    moreBtn.className = "icon-option";
+    moreBtn.dataset.value = "__more__";
+    moreBtn.innerHTML = `
       <span class="emoji">⋯</span>
       <span class="btn-label">más</span>
     `;
-    moreButton.addEventListener("click", openCategoryModal);
-    categoryGroup.appendChild(moreButton);
+    categoryGroup.appendChild(moreBtn);
   }
 
   categoryInput.value = selectedCategory;
@@ -241,28 +231,18 @@ function renderCategoryButtons() {
 function renderCategoryModalButtons() {
   const sorted = getSortedCategories(activeType);
   modalSubtitle.textContent = `categorías de ${activeType}`;
-
   allCategoriesGrid.innerHTML = "";
 
   sorted.forEach((item) => {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = `icon-option ${selectedCategory === item.value ? "selected" : ""}`;
-    button.dataset.value = item.value;
-    button.innerHTML = `
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = `icon-option ${selectedCategory === item.value ? "selected" : ""}`;
+    btn.dataset.value = item.value;
+    btn.innerHTML = `
       <span class="emoji">${item.icon}</span>
       <span class="btn-label">${item.value}</span>
     `;
-
-    button.addEventListener("click", () => {
-      selectedCategory = item.value;
-      categoryInput.value = item.value;
-      closeCategoryModal();
-      renderCategoryButtons();
-      renderCategoryModalButtons();
-    });
-
-    allCategoriesGrid.appendChild(button);
+    allCategoriesGrid.appendChild(btn);
   });
 }
 
@@ -285,22 +265,15 @@ function renderPaymentButtons() {
   paymentGroup.innerHTML = "";
 
   sorted.forEach((item) => {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = `icon-option ${selectedPayment === item.value ? "selected" : ""}`;
-    button.dataset.value = item.value;
-    button.innerHTML = `
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = `icon-option ${selectedPayment === item.value ? "selected" : ""}`;
+    btn.dataset.value = item.value;
+    btn.innerHTML = `
       <span class="emoji">${item.icon}</span>
       <span class="btn-label">${item.value}</span>
     `;
-
-    button.addEventListener("click", () => {
-      selectedPayment = item.value;
-      paymentInput.value = item.value;
-      renderPaymentButtons();
-    });
-
-    paymentGroup.appendChild(button);
+    paymentGroup.appendChild(btn);
   });
 
   paymentInput.value = selectedPayment;
@@ -323,17 +296,14 @@ function resetForm() {
   amountInput.value = "";
   dateInput.value = todayISO();
   activeType = "gasto";
-  movementTypeInput.value = "gasto";
-  selectedCategory = getSortedCategories(activeType)[0]?.value || "";
+  selectedCategory = getSortedCategories("gasto")[0]?.value || "";
   selectedPayment = "Efectivo";
+  movementTypeInput.value = "gasto";
   categoryInput.value = selectedCategory;
   paymentInput.value = selectedPayment;
   editingBanner.classList.add("hidden");
   submitButton.textContent = "＋";
-  setSelectedButton(typeGroup, activeType);
-  renderCategoryButtons();
-  renderCategoryModalButtons();
-  renderPaymentButtons();
+  renderAll();
 }
 
 function startEdit(movement) {
@@ -342,18 +312,17 @@ function startEdit(movement) {
   amountInput.value = movement.amount;
   dateInput.value = movement.date;
   activeType = movement.type;
-  movementTypeInput.value = movement.type;
   selectedCategory = movement.category;
   selectedPayment = movement.paymentMethod;
+
+  movementTypeInput.value = activeType;
   categoryInput.value = selectedCategory;
   paymentInput.value = selectedPayment;
+
   editingBanner.classList.remove("hidden");
   submitButton.textContent = "guardar";
-  setSelectedButton(typeGroup, activeType);
-  renderCategoryButtons();
-  renderCategoryModalButtons();
-  renderPaymentButtons();
   setPage("gastos");
+  renderAll();
   descriptionInput.focus();
 }
 
@@ -361,7 +330,7 @@ function cloneMovement(movement) {
   movements.unshift({
     ...movement,
     id: uid(),
-    createdAt: Date.now(),
+    createdAt: Date.now()
   });
   saveMovements();
   renderAll();
@@ -370,8 +339,8 @@ function cloneMovement(movement) {
 function deleteMovement(id) {
   if (!confirm("¿Eliminar este movimiento?")) return;
   movements = movements.filter((m) => m.id !== id);
-  saveMovements();
   if (editingId === id) resetForm();
+  saveMovements();
   renderAll();
 }
 
@@ -380,54 +349,24 @@ function clearAll() {
   movements = [];
   saveMovements();
   resetForm();
-  renderAll();
 }
 
-function getStatsBaseData() {
-  if (selectedMonth === "all") return movements;
+function getActiveMonthData() {
+  if (selectedMonth === "all") return [...movements];
   return movements.filter((m) => monthKeyFromDate(m.date) === selectedMonth);
 }
 
-function computeStats(data) {
-  const income = data
-    .filter((m) => m.type === "ingreso")
-    .reduce((sum, m) => sum + Number(m.amount || 0), 0);
-
-  const expense = data
-    .filter((m) => m.type === "gasto")
-    .reduce((sum, m) => sum + Number(m.amount || 0), 0);
-
-  const balance = income - expense;
-
-  return {
-    income,
-    expense,
-    balance,
-    count: data.length,
-  };
-}
-
 function buildFilteredHistory() {
-  const monthFiltered =
-    selectedMonth === "all"
-      ? [...movements]
-      : movements.filter((m) => monthKeyFromDate(m.date) === selectedMonth);
-
+  const base = getActiveMonthData();
   const term = searchInput.value.trim().toLowerCase();
   const typeVal = typeFilter.value;
   const paymentVal = paymentFilter.value;
 
-  let filtered = monthFiltered.filter((m) => {
-    const matchesTerm =
-      !term ||
-      [m.description, m.category, m.paymentMethod, m.type, m.date]
-        .join(" ")
-        .toLowerCase()
-        .includes(term);
-
+  let filtered = base.filter((m) => {
+    const text = [m.description, m.category, m.paymentMethod, m.type, m.date].join(" ").toLowerCase();
+    const matchesTerm = !term || text.includes(term);
     const matchesType = typeVal === "all" || m.type === typeVal;
     const matchesPayment = paymentVal === "all" || m.paymentMethod === paymentVal;
-
     return matchesTerm && matchesType && matchesPayment;
   });
 
@@ -456,29 +395,37 @@ function buildFilteredHistory() {
   return filtered;
 }
 
+function populateMonthFilter() {
+  const months = [...new Set(movements.map((m) => monthKeyFromDate(m.date)).filter(Boolean))].sort((a, b) => b.localeCompare(a));
+  monthFilter.innerHTML = `<option value="all">todos los meses</option>`;
+  months.forEach((key) => {
+    const option = document.createElement("option");
+    option.value = key;
+    option.textContent = monthLabel(key);
+    monthFilter.appendChild(option);
+  });
+
+  monthFilter.value = selectedMonth;
+}
+
 function renderSummaryStats() {
-  const data = getStatsBaseData();
+  const data = getActiveMonthData();
   const stats = computeStats(data);
 
   totalIncomeEl.textContent = money(stats.income);
   totalExpenseEl.textContent = money(stats.expense);
   totalBalanceEl.textContent = money(stats.balance);
-  totalBalanceEl.className =
-    stats.balance >= 0
-      ? "balance-positive"
-      : "balance-negative";
   totalCountEl.textContent = String(stats.count);
+  totalBalanceEl.className = stats.balance >= 0 ? "balance-positive" : "balance-negative";
 }
 
 function renderMonthsOverview() {
   const groups = {};
-
-  movements.forEach((movement) => {
-    const key = monthKeyFromDate(movement.date);
+  movements.forEach((m) => {
+    const key = monthKeyFromDate(m.date);
     if (!key) return;
-
     if (!groups[key]) groups[key] = [];
-    groups[key].push(movement);
+    groups[key].push(m);
   });
 
   const keys = Object.keys(groups).sort((a, b) => b.localeCompare(a));
@@ -492,7 +439,6 @@ function renderMonthsOverview() {
 
   keys.forEach((key) => {
     const stats = computeStats(groups[key]);
-
     const card = document.createElement("div");
     card.className = "month-card";
     card.innerHTML = `
@@ -500,7 +446,6 @@ function renderMonthsOverview() {
         <div class="month-name">${monthLabel(key)}</div>
         <div class="month-balance">${money(stats.balance)}</div>
       </div>
-
       <div class="month-metrics">
         <div class="metric">
           <span>ingresos</span>
@@ -516,7 +461,6 @@ function renderMonthsOverview() {
         </div>
       </div>
     `;
-
     monthsOverview.appendChild(card);
   });
 }
@@ -534,9 +478,6 @@ function renderHistory() {
   data.forEach((movement) => {
     const row = document.createElement("div");
     row.className = `movement ${movement.type}`;
-
-    const signedAmount = movement.type === "ingreso" ? `+ ${money(movement.amount)}` : `- ${money(movement.amount)}`;
-
     row.innerHTML = `
       <div class="movement-head">
         <div class="movement-main">
@@ -551,7 +492,9 @@ function renderHistory() {
       </div>
 
       <div class="movement-actions">
-        <div class="amount ${movement.type}">${signedAmount}</div>
+        <div class="amount ${movement.type}">
+          ${movement.type === "ingreso" ? "+" : "-"} ${money(movement.amount)}
+        </div>
         <div class="btn-row">
           <button type="button" class="ghost" data-edit="${movement.id}">editar</button>
           <button type="button" class="ghost" data-dup="${movement.id}">duplicar</button>
@@ -559,60 +502,8 @@ function renderHistory() {
         </div>
       </div>
     `;
-
     historyList.appendChild(row);
   });
-
-  document.querySelectorAll("[data-edit]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const movement = movements.find((m) => m.id === btn.dataset.edit);
-      if (movement) startEdit(movement);
-    });
-  });
-
-  document.querySelectorAll("[data-dup]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const movement = movements.find((m) => m.id === btn.dataset.dup);
-      if (movement) cloneMovement({
-        ...movement,
-        date: todayISO(),
-      });
-    });
-  });
-
-  document.querySelectorAll("[data-del]").forEach((btn) => {
-    btn.addEventListener("click", () => deleteMovement(btn.dataset.del));
-  });
-}
-
-function populateMonthFilter() {
-  const months = getUniqueMonths();
-
-  monthFilter.innerHTML = `
-    <option value="all">todos los meses</option>
-    ${months
-      .map(
-        (key) => `<option value="${key}">${monthLabel(key)}</option>`
-      )
-      .join("")}
-  `;
-
-  if (!monthFilter.querySelector(`option[value="${selectedMonth}"]`)) {
-    selectedMonth = "all";
-  }
-
-  monthFilter.value = selectedMonth;
-}
-
-function renderAll() {
-  populateMonthFilter();
-  renderSummaryStats();
-  renderMonthsOverview();
-  renderHistory();
-  renderTypeButtons();
-  renderCategoryButtons();
-  renderCategoryModalButtons();
-  renderPaymentButtons();
 }
 
 function exportExcel() {
@@ -627,27 +518,27 @@ function exportExcel() {
     Categoria: m.category,
     Detalle: m.description,
     "Medio de pago": m.paymentMethod,
-    Monto: Number(m.amount),
+    Monto: Number(m.amount)
   }));
 
-  const monthlyMap = {};
+  const byMonth = {};
   movements.forEach((m) => {
     const key = monthKeyFromDate(m.date);
     if (!key) return;
-    if (!monthlyMap[key]) monthlyMap[key] = [];
-    monthlyMap[key].push(m);
+    if (!byMonth[key]) byMonth[key] = [];
+    byMonth[key].push(m);
   });
 
-  const monthlyRows = Object.keys(monthlyMap)
+  const monthlyRows = Object.keys(byMonth)
     .sort((a, b) => b.localeCompare(a))
     .map((key) => {
-      const stats = computeStats(monthlyMap[key]);
+      const stats = computeStats(byMonth[key]);
       return {
         Mes: monthLabel(key),
         Ingresos: stats.income,
         Gastos: stats.expense,
         Balance: stats.balance,
-        Movimientos: stats.count,
+        Movimientos: stats.count
       };
     });
 
@@ -659,6 +550,17 @@ function exportExcel() {
   XLSX.utils.book_append_sheet(wb, ws2, "Resumen mensual");
 
   XLSX.writeFile(wb, `app-gastos-${todayISO()}.xlsx`);
+}
+
+function renderAll() {
+  populateMonthFilter();
+  renderTypeButtons();
+  renderCategoryButtons();
+  renderCategoryModalButtons();
+  renderPaymentButtons();
+  renderSummaryStats();
+  renderMonthsOverview();
+  renderHistory();
 }
 
 form.addEventListener("submit", (e) => {
@@ -677,7 +579,7 @@ form.addEventListener("submit", (e) => {
     category: categoryInput.value,
     paymentMethod: paymentInput.value,
     date: dateInput.value || todayISO(),
-    createdAt: Date.now(),
+    createdAt: Date.now()
   };
 
   if (editingId) {
@@ -687,23 +589,97 @@ form.addEventListener("submit", (e) => {
   }
 
   saveMovements();
-
-  descriptionInput.value = "";
-  amountInput.value = "";
-  dateInput.value = todayISO();
-  editingId = null;
-  editingBanner.classList.add("hidden");
-  submitButton.textContent = "＋";
-
-  renderAll();
-});
-
-cancelEditBtn.addEventListener("click", () => {
   resetForm();
 });
 
-clearAllBtn.addEventListener("click", clearAll);
-exportExcelBtn.addEventListener("click", exportExcel);
+typeGroup.addEventListener("click", (e) => {
+  const btn = e.target.closest(".icon-option");
+  if (!btn) return;
+
+  const value = btn.dataset.value;
+  if (value !== "gasto" && value !== "ingreso") return;
+
+  activeType = value;
+  movementTypeInput.value = value;
+  selectedCategory = getSortedCategories(value)[0]?.value || "";
+  renderAll();
+});
+
+categoryGroup.addEventListener("click", (e) => {
+  const btn = e.target.closest(".icon-option");
+  if (!btn) return;
+
+  if (btn.dataset.value === "__more__") {
+    openCategoryModal();
+    return;
+  }
+
+  selectedCategory = btn.dataset.value;
+  categoryInput.value = selectedCategory;
+  renderAll();
+});
+
+paymentGroup.addEventListener("click", (e) => {
+  const btn = e.target.closest(".icon-option");
+  if (!btn) return;
+
+  selectedPayment = btn.dataset.value;
+  paymentInput.value = selectedPayment;
+  renderAll();
+});
+
+allCategoriesGrid.addEventListener("click", (e) => {
+  const btn = e.target.closest(".icon-option");
+  if (!btn) return;
+
+  selectedCategory = btn.dataset.value;
+  categoryInput.value = selectedCategory;
+  closeCategoryModal();
+  renderAll();
+});
+
+historyList.addEventListener("click", (e) => {
+  const editBtn = e.target.closest("[data-edit]");
+  const dupBtn = e.target.closest("[data-dup]");
+  const delBtn = e.target.closest("[data-del]");
+
+  if (editBtn) {
+    const movement = movements.find((m) => m.id === editBtn.dataset.edit);
+    if (movement) startEdit(movement);
+    return;
+  }
+
+  if (dupBtn) {
+    const movement = movements.find((m) => m.id === dupBtn.dataset.dup);
+    if (!movement) return;
+    movements.unshift({
+      ...movement,
+      id: uid(),
+      date: todayISO(),
+      createdAt: Date.now()
+    });
+    saveMovements();
+    renderAll();
+    return;
+  }
+
+  if (delBtn) {
+    deleteMovement(delBtn.dataset.del);
+  }
+});
+
+topLinks.forEach((btn) => {
+  btn.addEventListener("click", () => setPage(btn.dataset.page));
+});
+
+openCategoryModalBtn.addEventListener("click", openCategoryModal);
+closeCategoryModalBtn.addEventListener("click", closeCategoryModal);
+categoryModal.addEventListener("click", (e) => {
+  if (e.target?.dataset?.closeModal) closeCategoryModal();
+});
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") closeCategoryModal();
+});
 
 monthFilter.addEventListener("change", () => {
   selectedMonth = monthFilter.value;
@@ -715,22 +691,10 @@ searchInput.addEventListener("input", renderHistory);
 typeFilter.addEventListener("change", renderHistory);
 paymentFilter.addEventListener("change", renderHistory);
 sortFilter.addEventListener("change", renderHistory);
+clearAllBtn.addEventListener("click", clearAll);
+exportExcelBtn.addEventListener("click", exportExcel);
+cancelEditBtn.addEventListener("click", resetForm);
 
-topLinks.forEach((btn) => {
-  btn.addEventListener("click", () => setPage(btn.dataset.page));
-});
-
-openCategoryModalBtn.addEventListener("click", openCategoryModal);
-closeCategoryModalBtn.addEventListener("click", closeCategoryModal);
-categoryModal.addEventListener("click", (e) => {
-  if (e.target?.dataset?.closeModal) closeCategoryModal();
-});
-
-document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape") closeCategoryModal();
-});
-
-renderTypeButtons();
+setPage("gastos");
 resetForm();
 renderAll();
-setPage("gastos");
