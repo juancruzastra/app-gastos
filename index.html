@@ -21,7 +21,7 @@
             <div class="card">
               <div class="hero">
                 <p class="eyebrow">app gastos</p>
-                <h1 class="title">cargar movimiento</h1>
+                <h1 class="title">movimientos</h1>
               </div>
 
               <form id="expenseForm" class="form">
@@ -29,11 +29,9 @@
                   <label>tipo</label>
                   <div class="icon-grid type-grid" id="typeGroup">
                     <button type="button" class="icon-option selected type-gasto" data-value="gasto">
-                      <span class="emoji">🟢</span>
                       <span class="btn-label">gasto</span>
                     </button>
                     <button type="button" class="icon-option type-ingreso" data-value="ingreso">
-                      <span class="emoji">🔵</span>
                       <span class="btn-label">ingreso</span>
                     </button>
                   </div>
@@ -87,6 +85,7 @@
                   <h2 class="section-title">resumen</h2>
                   <p class="muted">balance y movimientos</p>
                 </div>
+                <button type="button" id="exportExcelBtn" class="secondary">exportar excel</button>
               </div>
 
               <div class="stats">
@@ -126,6 +125,7 @@
       </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
     <script src="script.js"></script>
   </body>
 </html>
