@@ -51,7 +51,7 @@ body {
   color: var(--muted);
   cursor: pointer;
   padding: 8px 10px;
-  text-transform: lowercase;
+  text-transform: capitalize;
   letter-spacing: 0.02em;
 }
 
@@ -89,8 +89,8 @@ body {
 .eyebrow {
   margin: 0 0 6px;
   color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: 0.16em;
+  text-transform: capitalize;
+  letter-spacing: 0.08em;
   font-size: 11px;
   font-weight: 800;
 }
@@ -99,14 +99,14 @@ body {
   margin: 0;
   font-size: 28px;
   font-weight: 900;
-  text-transform: lowercase;
+  text-transform: capitalize;
 }
 
 .section-title {
   margin: 0;
   font-size: 21px;
   font-weight: 900;
-  text-transform: lowercase;
+  text-transform: capitalize;
 }
 
 .muted {
@@ -130,7 +130,7 @@ label {
   font-size: 13px;
   font-weight: 800;
   color: var(--muted);
-  text-transform: lowercase;
+  text-transform: capitalize;
   letter-spacing: 0.03em;
 }
 
@@ -182,7 +182,7 @@ input:focus {
   justify-content: center;
   align-items: center;
   padding: 10px 8px;
-  transition: transform 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+  transition: transform 0.15s ease, border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
 }
 
 .icon-option:hover {
@@ -190,29 +190,26 @@ input:focus {
 }
 
 .icon-option.selected {
-  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.12);
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.18), 0 14px 28px rgba(0, 0, 0, 0.35);
+  border-color: rgba(255, 255, 255, 0.75);
 }
 
 .type-gasto.selected {
-  border-color: rgba(239, 68, 68, 0.9);
-  background: rgba(239, 68, 68, 0.16);
+  border-color: rgba(239, 68, 68, 0.95);
+  background: rgba(239, 68, 68, 0.22);
+  box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.18), 0 14px 28px rgba(0, 0, 0, 0.35);
 }
 
 .type-ingreso.selected {
-  border-color: rgba(34, 197, 94, 0.9);
-  background: rgba(34, 197, 94, 0.16);
+  border-color: rgba(34, 197, 94, 0.95);
+  background: rgba(34, 197, 94, 0.22);
+  box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.18), 0 14px 28px rgba(0, 0, 0, 0.35);
 }
 
 .icon-option .material-symbols-outlined {
   font-size: 28px;
   line-height: 1;
-}
-
-.btn-label {
-  font-size: 12px;
-  font-weight: 800;
-  text-transform: lowercase;
-  letter-spacing: 0.03em;
 }
 
 .add-btn {
@@ -227,6 +224,7 @@ input:focus {
   font-weight: 900;
   line-height: 1;
   cursor: pointer;
+  box-shadow: 0 12px 30px rgba(34, 197, 94, 0.16);
 }
 
 .section-head {
@@ -244,7 +242,7 @@ input:focus {
   font-size: 13px;
   border-radius: 14px;
   cursor: pointer;
-  text-transform: lowercase;
+  text-transform: capitalize;
   font-weight: 800;
 }
 
@@ -266,7 +264,7 @@ input:focus {
   display: block;
   font-size: 12px;
   color: var(--muted);
-  text-transform: lowercase;
+  text-transform: capitalize;
   margin-bottom: 6px;
 }
 
@@ -322,7 +320,7 @@ input:focus {
   padding: 5px 10px;
   border-radius: 999px;
   font-size: 12px;
-  text-transform: lowercase;
+  text-transform: capitalize;
 }
 
 .chip.gasto {
@@ -379,7 +377,7 @@ input:focus {
   font-size: 13px;
   border-radius: 14px;
   cursor: pointer;
-  text-transform: lowercase;
+  text-transform: capitalize;
   font-weight: 800;
 }
 
@@ -394,7 +392,7 @@ input:focus {
   font-size: 15px;
   color: var(--muted);
   background: rgba(11, 18, 32, 0.72);
-  text-transform: lowercase;
+  text-transform: capitalize;
 }
 
 @media (max-width: 380px) {
