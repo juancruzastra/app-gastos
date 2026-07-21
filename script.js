@@ -1,4 +1,4 @@
-const STORAGE_KEY = "app_gastos_v2";
+const STORAGE_KEY = "app_gastos_v3";
 
 const form = document.getElementById("expenseForm");
 const description = document.getElementById("description");
@@ -14,6 +14,10 @@ const totalBalance = document.getElementById("totalBalance");
 const totalCount = document.getElementById("totalCount");
 const clearButton = document.getElementById("clearButton");
 
+const pageGastos = document.getElementById("page-gastos");
+const pageResumen = document.getElementById("page-resumen");
+const topLinks = document.querySelectorAll(".toplink");
+
 const typeGroup = document.getElementById("typeGroup");
 const categoryGroup = document.getElementById("categoryGroup");
 const paymentGroup = document.getElementById("paymentGroup");
@@ -26,13 +30,14 @@ const categoryOptions = {
     { value: "Transporte", icon: "🚌" },
     { value: "Casa", icon: "🏠" },
     { value: "Trabajo", icon: "🧰" },
-    { value: "Salud", icon: "🩺" },
-    { value: "Otros", icon: "🧾" }
+    { value: "Salud", icon: "🩺" }
   ],
   ingreso: [
     { value: "Sueldo", icon: "💰" },
     { value: "Transferencia", icon: "🏦" },
-    { value: "Otro ingreso", icon: "➕" }
+    { value: "Otro ingreso", icon: "➕" },
+    { value: "Ajuste", icon: "🧾" },
+    { value: "Extra", icon: "⭐" }
   ]
 };
 
@@ -40,9 +45,7 @@ const paymentOptions = [
   { value: "Efectivo", icon: "💵" },
   { value: "Débito", icon: "💳" },
   { value: "Crédito", icon: "🪪" },
-  { value: "Transferencia", icon: "🏦" },
-  { value: "Mercado Pago", icon: "📲" },
-  { value: "Otro", icon: "⋯" }
+  { value: "Transferencia", icon: "🏦" }
 ];
 
 let expenses = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
@@ -58,9 +61,18 @@ function money(value) {
   });
 }
 
+function setPage(page) {
+  const isGastos = page === "gastos";
+  pageGastos.classList.toggle("active", isGastos);
+  pageResumen.classList.toggle("active", !isGastos);
+
+  topLinks.forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.page === page);
+  });
+}
+
 function setSelectedButton(group, value) {
-  const buttons = group.querySelectorAll(".icon-option");
-  buttons.forEach((btn) => {
+  group.querySelectorAll(".icon-option").forEach((btn) => {
     btn.classList.toggle("selected", btn.dataset.value === value);
   });
 }
@@ -75,7 +87,7 @@ function renderCategoryButtons() {
     button.type = "button";
     button.className = `icon-option ${index === 0 ? "selected" : ""}`;
     button.dataset.value = item.value;
-    button.innerHTML = `${item.icon} ${item.value}`;
+    button.textContent = item.icon;
 
     button.addEventListener("click", () => {
       setSelectedButton(categoryGroup, item.value);
@@ -96,7 +108,7 @@ function renderPaymentButtons() {
     button.type = "button";
     button.className = `icon-option ${index === 0 ? "selected" : ""}`;
     button.dataset.value = item.value;
-    button.innerHTML = `${item.icon} ${item.value}`;
+    button.textContent = item.icon;
 
     button.addEventListener("click", () => {
       setSelectedButton(paymentGroup, item.value);
@@ -122,19 +134,15 @@ function renderTypeButtons() {
 
 function render() {
   if (expenses.length === 0) {
-    expenseList.innerHTML =
-      '<div class="empty">Todavía no hay movimientos cargados.</div>';
-
-    summary.innerHTML =
-      '<div class="empty">Cargá movimientos para ver el resumen.</div>';
-
+    expenseList.innerHTML = '<div class="empty">Todavía no hay movimientos cargados.</div>';
+    summary.innerHTML = '<div class="empty">Cargá movimientos para ver el desglose.</div>';
     totalBalance.textContent = "$0";
     totalCount.textContent = "0";
     return;
   }
 
   let balance = 0;
-  let categories = {};
+  const groups = {};
 
   expenseList.innerHTML = "";
 
@@ -144,32 +152,29 @@ function render() {
     balance += signedAmount;
 
     const key = `${item.type}-${item.category}`;
-    categories[key] = categories[key] || {
-      label: item.category,
-      type: item.type,
-      total: 0
-    };
-    categories[key].total += signedAmount;
+    if (!groups[key]) {
+      groups[key] = {
+        label: item.category,
+        type: item.type,
+        total: 0
+      };
+    }
+    groups[key].total += signedAmount;
 
     const card = document.createElement("div");
     card.className = "expense";
 
     card.innerHTML = `
-      <div>
-        <div class="chips">
-          <span class="chip">${item.type === "ingreso" ? "➕ Ingreso" : "➖ Gasto"}</span>
-          <span class="chip">${item.category}</span>
-          <span class="chip">${item.payment}</span>
-          <span class="date">${item.date}</span>
-        </div>
-        <strong class="desc">${item.description}</strong>
+      <div class="chips">
+        <span class="chip">${item.type === "ingreso" ? "ingreso" : "gasto"}</span>
+        <span class="chip">${item.category}</span>
+        <span class="chip">${item.payment}</span>
+        <span class="chip">${item.date}</span>
       </div>
-
+      <strong class="desc">${item.description}</strong>
       <div class="expense-actions">
         <strong class="amount">${item.type === "ingreso" ? "+" : "-"} ${money(item.amount)}</strong>
-        <div class="btn-row">
-          <button class="danger" type="button" data-delete="${index}">Borrar</button>
-        </div>
+        <button class="danger" type="button" data-delete="${index}">borrar</button>
       </div>
     `;
 
@@ -181,11 +186,11 @@ function render() {
 
   summary.innerHTML = "";
 
-  Object.values(categories).forEach((item) => {
+  Object.values(groups).forEach((item) => {
     const row = document.createElement("div");
     row.className = "summary-item";
     row.innerHTML = `
-      <span>${item.label} (${item.type === "ingreso" ? "Ingreso" : "Gasto"})</span>
+      <span>${item.label} (${item.type === "ingreso" ? "ingreso" : "gasto"})</span>
       <strong>${money(item.total)}</strong>
     `;
     summary.appendChild(row);
@@ -229,6 +234,7 @@ form.addEventListener("submit", (e) => {
 
   renderCategoryButtons();
   renderPaymentButtons();
+  setPage("resumen");
 });
 
 clearButton.addEventListener("click", () => {
@@ -239,7 +245,12 @@ clearButton.addEventListener("click", () => {
   }
 });
 
+topLinks.forEach((btn) => {
+  btn.addEventListener("click", () => setPage(btn.dataset.page));
+});
+
 renderTypeButtons();
 renderCategoryButtons();
 renderPaymentButtons();
 render();
+setPage("gastos");
