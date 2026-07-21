@@ -6,38 +6,15 @@
     <title>Gestor de Gastos</title>
     <meta name="theme-color" content="#0b0f17" />
     <link rel="stylesheet" href="style.css" />
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Material+Symbols+Outlined:wght,FILL,GRAD,opsz@400,0,0,24"
       rel="stylesheet"
     />
   </head>
   <body>
-    <div id="authView" class="auth-view">
-      <div class="card auth-card">
-        <p class="eyebrow">Gestor de Gastos</p>
-        <h1 class="title">Ingresar</h1>
-        <p class="muted">Usá la cuenta compartida para abrir la app.</p>
-
-        <form id="loginForm" class="auth-form">
-          <div class="field">
-            <label for="loginEmail">Email</label>
-            <input type="email" id="loginEmail" placeholder="correo@dominio.com" autocomplete="email" required />
-          </div>
-
-          <div class="field">
-            <label for="loginPassword">Contraseña</label>
-            <input type="password" id="loginPassword" placeholder="Contraseña" autocomplete="current-password" required />
-          </div>
-
-          <button type="submit" class="secondary auth-submit">Entrar</button>
-          <p id="authError" class="auth-error"></p>
-        </form>
-      </div>
-    </div>
-
-    <div id="appView" class="app hidden">
+    <div class="app">
       <div class="container">
         <header class="topbar">
           <button class="toplink active" data-page="gastos" type="button">Agregar</button>
@@ -59,10 +36,22 @@
                 <div class="field">
                   <label>Tipo</label>
                   <div class="icon-grid type-grid" id="typeGroup">
-                    <button type="button" class="icon-option selected type-gasto" data-value="gasto" title="Gasto" aria-label="Gasto">
+                    <button
+                      type="button"
+                      class="icon-option selected type-gasto"
+                      data-value="gasto"
+                      title="Gasto"
+                      aria-label="Gasto"
+                    >
                       <span class="material-symbols-outlined">remove_circle</span>
                     </button>
-                    <button type="button" class="icon-option type-ingreso" data-value="ingreso" title="Ingreso" aria-label="Ingreso">
+                    <button
+                      type="button"
+                      class="icon-option type-ingreso"
+                      data-value="ingreso"
+                      title="Ingreso"
+                      aria-label="Ingreso"
+                    >
                       <span class="material-symbols-outlined">add_circle</span>
                     </button>
                   </div>
