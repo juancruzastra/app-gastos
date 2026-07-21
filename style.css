@@ -86,8 +86,7 @@ label {
   font-weight: 600;
 }
 
-input,
-select {
+input {
   width: 100%;
   border: 1px solid #cbd5e1;
   border-radius: 16px;
@@ -97,14 +96,40 @@ select {
   outline: none;
 }
 
-input:focus,
-select:focus {
+input:focus {
   border-color: #475569;
+}
+
+input[readonly] {
+  background: #f8fafc;
 }
 
 .grid {
   display: grid;
   gap: 14px;
+}
+
+.icon-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.icon-option {
+  border: 1px solid #cbd5e1;
+  border-radius: 16px;
+  padding: 14px 12px;
+  background: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: center;
+}
+
+.icon-option.selected {
+  background: #0f172a;
+  color: white;
+  border-color: #0f172a;
 }
 
 .actions {
@@ -130,6 +155,10 @@ button {
 .secondary {
   background: #e2e8f0;
   color: #0f172a;
+}
+
+.add-btn {
+  font-size: 18px;
 }
 
 .section-head {
@@ -227,8 +256,7 @@ button {
   border-radius: 18px;
 }
 
-.empty,
-.hint {
+.empty {
   color: #64748b;
   background: #f8fafc;
   border: 1px dashed #cbd5e1;
@@ -239,6 +267,10 @@ button {
 @media (min-width: 700px) {
   .grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .icon-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
   .section-head {
