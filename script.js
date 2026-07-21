@@ -234,7 +234,6 @@ form.addEventListener("submit", (e) => {
 
   renderCategoryButtons();
   renderPaymentButtons();
-  setPage("resumen");
 });
 
 clearButton.addEventListener("click", () => {
