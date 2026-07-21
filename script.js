@@ -44,7 +44,7 @@ const cancelEditBtn = document.getElementById("cancelEdit");
 const submitButton = document.getElementById("submitButton");
 
 const todayISO = () => new Date().toISOString().slice(0, 10);
-dateInput.value = todayISO();
+if (dateInput) dateInput.value = todayISO();
 
 const categoriesByType = {
   gasto: [
