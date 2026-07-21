@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>App Gastos</title>
+    <meta name="theme-color" content="#0f172a" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="app">
+      <div class="container">
+        <header class="card">
+          <h1>App Gastos</h1>
+          <p class="muted">Cargá tus gastos de forma simple desde el celular</p>
+
+          <div class="stats">
+            <div class="stat">
+              <span>Total</span>
+              <strong id="totalAmount">$0</strong>
+            </div>
+            <div class="stat">
+              <span>Registros</span>
+              <strong id="totalCount">0</strong>
+            </div>
+          </div>
+        </header>
+
+        <section class="card">
+          <form id="expenseForm" class="form">
+            <div class="field">
+              <label for="description">Detalle del gasto</label>
+              <input
+                type="text"
+                id="description"
+                placeholder="Ej: combustible, almuerzo, repuesto..."
+                required
+              />
+            </div>
+
+            <div class="grid">
+              <div class="field">
+                <label for="amount">Monto</label>
+                <input type="number" id="amount" min="0" step="0.01" placeholder="0.00" required />
+              </div>
+
+              <div class="field">
+                <label for="category">Categoría</label>
+                <select id="category">
+                  <option>Comida</option>
+                  <option>Transporte</option>
+                  <option>Casa</option>
+                  <option>Trabajo</option>
+                  <option>Salud</option>
+                  <option>Otros</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="grid">
+              <div class="field">
+                <label for="paymentMethod">Medio de pago</label>
+                <select id="paymentMethod">
+                  <option>Efectivo</option>
+                  <option>Débito</option>
+                  <option>Crédito</option>
+                  <option>Transferencia</option>
+                  <option>Mercado Pago</option>
+                  <option>Otro</option>
+                </select>
+              </div>
+
+              <div class="field">
+                <label for="date">Fecha</label>
+                <input type="date" id="date" />
+              </div>
+            </div>
+
+            <div class="actions">
+              <button type="submit" class="primary">Agregar gasto</button>
+              <button type="button" id="clearButton" class="secondary">Limpiar todo</button>
+            </div>
+          </form>
+        </section>
+
+        <section class="card">
+          <div class="section-head">
+            <div>
+              <h2>Movimientos</h2>
+              <p class="muted">Lista de gastos cargados</p>
+            </div>
+          </div>
+
+          <div id="expenseList" class="list">
+            <div class="empty">Todavía no hay gastos cargados.</div>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2>Resumen por categoría</h2>
+          <div id="summary" class="summary">
+            <div class="empty">Cargá gastos para ver el resumen.</div>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>
