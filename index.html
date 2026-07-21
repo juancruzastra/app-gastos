@@ -10,93 +10,106 @@
   <body>
     <div class="app">
       <div class="container">
-        <header class="card">
-          <h1>App Gastos</h1>
-          <p class="muted">Cargá gastos e ingresos desde el celular</p>
-
-          <div class="stats">
-            <div class="stat">
-              <span>Saldo</span>
-              <strong id="totalBalance">$0</strong>
-            </div>
-            <div class="stat">
-              <span>Movimientos</span>
-              <strong id="totalCount">0</strong>
-            </div>
-          </div>
+        <header class="topbar">
+          <button class="toplink active" data-page="gastos" type="button">gastos</button>
+          <span class="slash">/</span>
+          <button class="toplink" data-page="resumen" type="button">resumen</button>
         </header>
 
-        <section class="card">
-          <form id="expenseForm" class="form">
-            <div class="field">
-              <label for="description">Detalle</label>
-              <input
-                type="text"
-                id="description"
-                placeholder="Ej: combustible, sueldo, café..."
-                required
-              />
-            </div>
+        <main>
+          <section id="page-gastos" class="page active">
+            <div class="card">
+              <h1 class="title">GASTOS</h1>
 
-            <div class="field">
-              <label>Tipo de movimiento</label>
-              <div class="icon-grid" id="typeGroup">
-                <button type="button" class="icon-option selected" data-value="gasto" data-group="type">➖ Gasto</button>
-                <button type="button" class="icon-option" data-value="ingreso" data-group="type">➕ Ingreso</button>
+              <form id="expenseForm" class="form">
+                <div class="field">
+                  <label for="description">detalle</label>
+                  <input
+                    type="text"
+                    id="description"
+                    placeholder="Ej: combustible, almuerzo, sueldo..."
+                    required
+                  />
+                </div>
+
+                <div class="field">
+                  <label for="amount">monto</label>
+                  <input
+                    type="number"
+                    id="amount"
+                    min="0"
+                    step="0.01"
+                    placeholder="0.00"
+                    required
+                  />
+                </div>
+
+                <div class="field">
+                  <label>tipo</label>
+                  <div class="icon-grid type-grid" id="typeGroup">
+                    <button type="button" class="icon-option selected" data-value="gasto">➖</button>
+                    <button type="button" class="icon-option" data-value="ingreso">➕</button>
+                  </div>
+                  <input type="hidden" id="movementType" value="gasto" />
+                </div>
+
+                <div class="field">
+                  <label>categoria</label>
+                  <div class="icon-grid" id="categoryGroup"></div>
+                  <input type="hidden" id="category" />
+                </div>
+
+                <div class="field">
+                  <label>medio de pago</label>
+                  <div class="icon-grid payment-grid" id="paymentGroup"></div>
+                  <input type="hidden" id="paymentMethod" />
+                </div>
+
+                <div class="field">
+                  <label for="date">fecha</label>
+                  <input type="date" id="date" readonly />
+                </div>
+
+                <button type="submit" class="add-btn">＋</button>
+              </form>
+            </div>
+          </section>
+
+          <section id="page-resumen" class="page">
+            <div class="card">
+              <h2 class="section-title">Resumen</h2>
+
+              <div class="stats">
+                <div class="stat">
+                  <span>saldo</span>
+                  <strong id="totalBalance">$0</strong>
+                </div>
+                <div class="stat">
+                  <span>movimientos</span>
+                  <strong id="totalCount">0</strong>
+                </div>
               </div>
-              <input type="hidden" id="movementType" value="gasto" />
             </div>
 
-            <div class="grid">
-              <div class="field">
-                <label>Monto</label>
-                <input type="number" id="amount" min="0" step="0.01" placeholder="0.00" required />
-              </div>
-
-              <div class="field">
-                <label>Fecha</label>
-                <input type="date" id="date" readonly />
+            <div class="card">
+              <h2 class="section-title">Movimientos</h2>
+              <div id="expenseList" class="list">
+                <div class="empty">Todavía no hay movimientos cargados.</div>
               </div>
             </div>
 
-            <div class="field">
-              <label>Categoria</label>
-              <div class="icon-grid" id="categoryGroup"></div>
-              <input type="hidden" id="category" />
+            <div class="card">
+              <h2 class="section-title">Desglose</h2>
+              <div id="summary" class="summary">
+                <div class="empty">Cargá movimientos para ver el desglose.</div>
+              </div>
             </div>
 
-            <div class="field">
-              <label>Medio de pago</label>
-              <div class="icon-grid" id="paymentGroup"></div>
-              <input type="hidden" id="paymentMethod" />
+            <div class="card">
+              <button type="button" id="clearButton" class="secondary full-btn">Limpiar todo</button>
             </div>
-
-            <div class="actions">
-              <button type="submit" class="primary add-btn">＋ Agregar</button>
-              <button type="button" id="clearButton" class="secondary">Limpiar todo</button>
-            </div>
-          </form>
-        </section>
-
-        <section class="card">
-          <div class="section-head">
-            <div>
-              <h2>Movimientos</h2>
-              <p class="muted">Lista de gastos e ingresos</p>
-            </div>
-          </div>
-
-          <div id="expenseList" class="list">
-            <div class="empty">Todavía no hay movimientos cargados.</div>
-          </div>
-        </section>
-
-        <section class="card">
-          <h2>Resumen por categoría</h2>
-          <div id="summary" class="summary">
-            <div class="empty">Cargá movimientos para ver el resumen.</div>
-          </div>
-        </section>
+          </section>
+        </main>
       </div>
     </div>
 
