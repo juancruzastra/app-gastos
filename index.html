@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>App Gastos</title>
+    <title>Gestor de Gastos</title>
     <meta name="theme-color" content="#0b0f17" />
     <link rel="stylesheet" href="style.css" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -17,48 +17,48 @@
     <div class="app">
       <div class="container">
         <header class="topbar">
-          <button class="toplink active" data-page="gastos" type="button">agregar</button>
+          <button class="toplink active" data-page="gastos" type="button">Agregar</button>
           <span class="slash">/</span>
-          <button class="toplink" data-page="resumen" type="button">resumen</button>
+          <button class="toplink" data-page="resumen" type="button">Resumen</button>
         </header>
 
         <main>
           <section id="page-gastos" class="page active">
             <div class="card">
               <div class="hero">
-                <p class="eyebrow">app gastos</p>
-                <h1 class="title">movimientos</h1>
+                <p class="eyebrow">App Gastos</p>
+                <h1 class="title">Gestor de Gastos</h1>
               </div>
 
               <form id="expenseForm" class="form">
                 <input type="hidden" id="date" />
 
                 <div class="field">
-                  <label>tipo</label>
+                  <label>Tipo</label>
                   <div class="icon-grid type-grid" id="typeGroup">
-                    <button type="button" class="icon-option selected type-gasto" data-value="gasto">
-                      <span class="btn-label">gasto</span>
+                    <button type="button" class="icon-option selected type-gasto" data-value="gasto" title="Gasto" aria-label="Gasto">
+                      <span class="material-symbols-outlined">remove_circle</span>
                     </button>
-                    <button type="button" class="icon-option type-ingreso" data-value="ingreso">
-                      <span class="btn-label">ingreso</span>
+                    <button type="button" class="icon-option type-ingreso" data-value="ingreso" title="Ingreso" aria-label="Ingreso">
+                      <span class="material-symbols-outlined">add_circle</span>
                     </button>
                   </div>
                   <input type="hidden" id="movementType" value="gasto" />
                 </div>
 
                 <div class="field">
-                  <label for="description">detalle</label>
+                  <label for="description">Detalle</label>
                   <input
                     type="text"
                     id="description"
-                    placeholder="ej: combustible, sueldo, café..."
+                    placeholder="Ej: combustible, sueldo, café..."
                     autocomplete="off"
                     required
                   />
                 </div>
 
                 <div class="field">
-                  <label for="amount">monto</label>
+                  <label for="amount">Monto</label>
                   <input
                     type="number"
                     id="amount"
@@ -70,18 +70,18 @@
                 </div>
 
                 <div class="field">
-                  <label>categoría</label>
+                  <label>Categoría</label>
                   <div class="icon-grid category-grid" id="categoryGroup"></div>
                   <input type="hidden" id="category" />
                 </div>
 
                 <div class="field">
-                  <label>medio de pago</label>
+                  <label>Medio de pago</label>
                   <div class="icon-grid payment-grid" id="paymentGroup"></div>
                   <input type="hidden" id="paymentMethod" />
                 </div>
 
-                <button type="submit" class="add-btn">＋</button>
+                <button type="submit" class="add-btn" title="Agregar" aria-label="Agregar">＋</button>
               </form>
             </div>
           </section>
@@ -90,27 +90,27 @@
             <div class="card">
               <div class="section-head">
                 <div>
-                  <h2 class="section-title">resumen</h2>
-                  <p class="muted">balance y movimientos</p>
+                  <h2 class="section-title">Resumen</h2>
+                  <p class="muted">Balance y movimientos</p>
                 </div>
-                <button type="button" id="exportExcelBtn" class="secondary">exportar excel</button>
+                <button type="button" id="exportExcelBtn" class="secondary">Exportar Excel</button>
               </div>
 
               <div class="stats">
                 <div class="stat stat-income">
-                  <span>ingresos</span>
+                  <span>Ingresos</span>
                   <strong id="totalIncome">$0</strong>
                 </div>
                 <div class="stat stat-expense">
-                  <span>gastos</span>
+                  <span>Gastos</span>
                   <strong id="totalExpense">$0</strong>
                 </div>
                 <div class="stat stat-balance">
-                  <span>balance</span>
+                  <span>Balance</span>
                   <strong id="totalBalance">$0</strong>
                 </div>
                 <div class="stat">
-                  <span>movimientos</span>
+                  <span>Movimientos</span>
                   <strong id="totalCount">0</strong>
                 </div>
               </div>
@@ -119,13 +119,13 @@
             <div class="card">
               <div class="section-head">
                 <div>
-                  <h2 class="section-title">historial</h2>
-                  <p class="muted">editar o borrar movimientos</p>
+                  <h2 class="section-title">Historial</h2>
+                  <p class="muted">Editar o borrar movimientos</p>
                 </div>
               </div>
 
               <div id="historyList" class="list">
-                <div class="empty">todavía no hay movimientos cargados.</div>
+                <div class="empty">Todavía no hay movimientos cargados.</div>
               </div>
             </div>
           </section>
