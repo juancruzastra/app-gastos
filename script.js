@@ -1,8 +1,9 @@
-const STORAGE_KEY = "app_gastos_simple_v1";
+const STORAGE_KEY = "app_gastos_simple_v2";
 
 const form = document.getElementById("expenseForm");
 const descriptionInput = document.getElementById("description");
 const amountInput = document.getElementById("amount");
+const dateInput = document.getElementById("date");
 const movementTypeInput = document.getElementById("movementType");
 const categoryInput = document.getElementById("category");
 const paymentInput = document.getElementById("paymentMethod");
@@ -24,29 +25,29 @@ const exportExcelBtn = document.getElementById("exportExcelBtn");
 
 const categoriesByType = {
   gasto: [
-    { value: "Alquiler" },
-    { value: "Servicios" },
-    { value: "Pago de tarjetas" },
-    { value: "Medicina" },
-    { value: "Kiosko" },
-    { value: "Varios" },
-    { value: "Combustible" },
-    { value: "Supermercado" }
+    { value: "Alquiler", icon: "home" },
+    { value: "Servicios", icon: "lightbulb" },
+    { value: "Pago de tarjetas", icon: "credit_card" },
+    { value: "Medicina", icon: "medical_services" },
+    { value: "Kiosko", icon: "storefront" },
+    { value: "Varios", icon: "inventory_2" },
+    { value: "Combustible", icon: "local_gas_station" },
+    { value: "Supermercado", icon: "shopping_cart" }
   ],
   ingreso: [
-    { value: "Sueldo" },
-    { value: "Transferencia" },
-    { value: "Otro ingreso" }
+    { value: "Sueldo", icon: "payments" },
+    { value: "Transferencia", icon: "account_balance" },
+    { value: "Otro ingreso", icon: "add_circle" }
   ]
 };
 
 const paymentMethods = [
-  { value: "Efectivo" },
-  { value: "Débito" },
-  { value: "Crédito" },
-  { value: "Transferencia" },
-  { value: "Mercado Pago" },
-  { value: "Otro" }
+  { value: "Efectivo", icon: "paid" },
+  { value: "Débito", icon: "debit_card" },
+  { value: "Crédito", icon: "credit_card" },
+  { value: "Transferencia", icon: "account_balance" },
+  { value: "Mercado Pago", icon: "smartphone" },
+  { value: "Otro", icon: "more_horiz" }
 ];
 
 let movements = loadMovements();
@@ -107,6 +108,10 @@ function setSelectedButton(group, value) {
   });
 }
 
+function iconSpan(name) {
+  return `<span class="material-symbols-outlined">${name}</span>`;
+}
+
 function renderTypeButtons() {
   setSelectedButton(typeGroup, activeType);
 }
@@ -124,7 +129,10 @@ function renderCategoryButtons() {
     btn.type = "button";
     btn.className = `icon-option ${selectedCategory === item.value ? "selected" : ""}`;
     btn.dataset.value = item.value;
-    btn.innerHTML = `<span class="btn-label">${item.value}</span>`;
+    btn.innerHTML = `
+      ${iconSpan(item.icon)}
+      <span class="btn-label">${item.value}</span>
+    `;
     categoryGroup.appendChild(btn);
   });
 
@@ -143,7 +151,10 @@ function renderPaymentButtons() {
     btn.type = "button";
     btn.className = `icon-option ${selectedPayment === item.value ? "selected" : ""}`;
     btn.dataset.value = item.value;
-    btn.innerHTML = `<span class="btn-label">${item.value}</span>`;
+    btn.innerHTML = `
+      ${iconSpan(item.icon)}
+      <span class="btn-label">${item.value}</span>
+    `;
     paymentGroup.appendChild(btn);
   });
 
@@ -222,6 +233,7 @@ function resetForm() {
   editingId = null;
   descriptionInput.value = "";
   amountInput.value = "";
+  dateInput.value = dateISO();
   activeType = "gasto";
   selectedCategory = categoriesByType.gasto[0].value;
   selectedPayment = "Efectivo";
@@ -235,6 +247,7 @@ function startEdit(movement) {
   editingId = movement.id;
   descriptionInput.value = movement.description;
   amountInput.value = movement.amount;
+  dateInput.value = movement.date;
   activeType = movement.type;
   selectedCategory = movement.category;
   selectedPayment = movement.paymentMethod;
@@ -248,8 +261,8 @@ function startEdit(movement) {
 function deleteMovement(id) {
   if (!confirm("¿Eliminar este movimiento?")) return;
   movements = movements.filter((m) => m.id !== id);
-  if (editingId === id) resetForm();
   saveMovements();
+  if (editingId === id) resetForm();
   renderAll();
 }
 
@@ -268,18 +281,11 @@ function exportExcel() {
     Monto: Number(m.amount)
   }));
 
-  const summary = [
-    {
-      Ingresos: computeStats().income,
-      Gastos: computeStats().expense,
-      Balance: computeStats().balance,
-      Movimientos: computeStats().count
-    }
-  ];
+  const summary = computeStats();
 
   const wb = XLSX.utils.book_new();
   const ws1 = XLSX.utils.json_to_sheet(rows);
-  const ws2 = XLSX.utils.json_to_sheet(summary);
+  const ws2 = XLSX.utils.json_to_sheet([summary]);
 
   XLSX.utils.book_append_sheet(wb, ws1, "Historial");
   XLSX.utils.book_append_sheet(wb, ws2, "Resumen");
@@ -302,7 +308,7 @@ form.addEventListener("submit", (e) => {
     amount,
     category: categoryInput.value,
     paymentMethod: paymentInput.value,
-    date: dateISO()
+    date: dateInput.value || dateISO()
   };
 
   if (editingId) {
@@ -363,5 +369,6 @@ topLinks.forEach((btn) => {
 
 exportExcelBtn.addEventListener("click", exportExcel);
 
+dateInput.value = dateISO();
 setPage("gastos");
 renderAll();
