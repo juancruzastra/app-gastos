@@ -175,10 +175,8 @@ input:focus {
   color: var(--text);
   cursor: pointer;
   display: flex;
-  flex-direction: column;
   justify-content: center;
   align-items: center;
-  gap: 5px;
   padding: 10px 8px;
 }
 
@@ -187,24 +185,20 @@ input:focus {
 }
 
 .type-gasto.selected {
-  border-color: rgba(34, 197, 94, 0.9);
-  background: rgba(34, 197, 94, 0.14);
+  border-color: rgba(239, 68, 68, 0.9);
+  background: rgba(239, 68, 68, 0.16);
 }
 
 .type-ingreso.selected {
-  border-color: rgba(59, 130, 246, 0.9);
-  background: rgba(59, 130, 246, 0.14);
-}
-
-.emoji {
-  font-size: 26px;
-  line-height: 1;
+  border-color: rgba(34, 197, 94, 0.9);
+  background: rgba(34, 197, 94, 0.16);
 }
 
 .btn-label {
   font-size: 12px;
   font-weight: 800;
   text-transform: lowercase;
+  letter-spacing: 0.03em;
 }
 
 .add-btn {
@@ -219,6 +213,25 @@ input:focus {
   font-weight: 900;
   line-height: 1;
   cursor: pointer;
+}
+
+.section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.secondary {
+  border: 1px solid var(--line);
+  background: #0b1220;
+  color: var(--text);
+  padding: 10px 12px;
+  font-size: 13px;
+  border-radius: 14px;
+  cursor: pointer;
+  text-transform: lowercase;
+  font-weight: 800;
 }
 
 .stats {
@@ -278,7 +291,7 @@ input:focus {
 }
 
 .movement.ingreso {
-  border-color: rgba(59, 130, 246, 0.45);
+  border-color: rgba(34, 197, 94, 0.9);
 }
 
 .chips {
@@ -304,8 +317,8 @@ input:focus {
 }
 
 .chip.ingreso {
-  border-color: rgba(59, 130, 246, 0.28);
-  background: rgba(59, 130, 246, 0.08);
+  border-color: rgba(34, 197, 94, 0.45);
+  background: rgba(34, 197, 94, 0.14);
 }
 
 .desc {
