@@ -1,4 +1,16 @@
-const STORAGE_KEY = "app_gastos_simple_v2";
+import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+
+const SUPABASE_URL = "PASTE_SUPABASE_URL_HERE";
+const SUPABASE_ANON_KEY = "PASTE_SUPABASE_PUBLISHABLE_KEY_HERE";
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const authView = document.getElementById("authView");
+const appView = document.getElementById("appView");
+const loginForm = document.getElementById("loginForm");
+const loginEmail = document.getElementById("loginEmail");
+const loginPassword = document.getElementById("loginPassword");
+const authError = document.getElementById("authError");
 
 const form = document.getElementById("expenseForm");
 const descriptionInput = document.getElementById("description");
@@ -23,83 +35,26 @@ const categoryGroup = document.getElementById("categoryGroup");
 const paymentGroup = document.getElementById("paymentGroup");
 const exportExcelBtn = document.getElementById("exportExcelBtn");
 
-const categoriesByType = {
-  gasto: [
-    { value: "Alquiler", icon: "home" },
-    { value: "Servicios", icon: "lightbulb" },
-    { value: "Pago de tarjetas", icon: "credit_card" },
-    { value: "Medicina", icon: "medical_services" },
-    { value: "Kiosko", icon: "storefront" },
-    { value: "Varios", icon: "inventory_2" },
-    { value: "Combustible", icon: "local_gas_station" },
-    { value: "Supermercado", icon: "shopping_cart" }
-  ],
-  ingreso: [
-    { value: "Sueldo", icon: "payments" },
-    { value: "Transferencia", icon: "account_balance" },
-    { value: "Otro ingreso", icon: "add_circle" }
-  ]
-};
-
-const paymentMethods = [
-  { value: "Efectivo", icon: "paid" },
-  { value: "Débito", icon: "account_balance_wallet" },
-  { value: "Crédito", icon: "credit_card" },
-  { value: "Transferencia", icon: "account_balance" },
-  { value: "Mercado Pago", icon: "smartphone" },
-  { value: "Otro", icon: "more_horiz" }
-];
-
-let movements = loadMovements();
-let activeType = "gasto";
-let selectedCategory = categoriesByType.gasto[0].value;
-let selectedPayment = "Efectivo";
+let movements = [];
 let editingId = null;
+let activeType = "gasto";
+let selectedCategory = "";
+let selectedPayment = "Efectivo";
+let categoriesByType = { gasto: [], ingreso: [] };
+let paymentMethods = [];
+let bootstrapped = false;
 
 function uid() {
   return window.crypto?.randomUUID?.() || String(Date.now() + Math.random());
 }
 
-function loadMovements() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    const parsed = raw ? JSON.parse(raw) : [];
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveMovements() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(movements));
-}
-
-function setPage(page) {
-  const isAdd = page === "gastos";
-  pageGastos.classList.toggle("active", isAdd);
-  pageResumen.classList.toggle("active", !isAdd);
-
-  topLinks.forEach((btn) => {
-    btn.classList.toggle("active", btn.dataset.page === page);
-  });
-}
-
-function money(value) {
-  return Number(value || 0).toLocaleString("es-AR", {
-    style: "currency",
-    currency: "ARS",
-    maximumFractionDigits: 2
-  });
-}
-
-function dateISO() {
+function todayISO() {
   return new Date().toISOString().slice(0, 10);
 }
 
-function dateDisplay(iso) {
-  if (!iso) return "";
-  const [y, m, d] = iso.split("-");
-  return `${d}/${m}/${y}`;
+function setAuthVisible(isAuth) {
+  authView.classList.toggle("hidden", !isAuth);
+  appView.classList.toggle("hidden", isAuth);
 }
 
 function setSelectedButton(group, value) {
@@ -112,26 +67,149 @@ function iconSpan(name) {
   return `<span class="material-symbols-outlined">${name}</span>`;
 }
 
-function getSortedCategories(type) {
+function money(value) {
+  return Number(value || 0).toLocaleString("es-AR", {
+    style: "currency",
+    currency: "ARS",
+    maximumFractionDigits: 2
+  });
+}
+
+function dateDisplay(iso) {
+  if (!iso) return "";
+  const str = String(iso);
+  return str.length >= 10 ? str.slice(0, 10).split("-").reverse().join("/") : str;
+}
+
+function dateForInput(value) {
+  if (!value) return todayISO();
+  const str = String(value);
+  return str.length >= 10 ? str.slice(0, 10) : todayISO();
+}
+
+function normalizeRow(row) {
+  return {
+    id: row.id,
+    created_at: row.created_at,
+    fecha: row.fecha,
+    type: row.tipo,
+    description: row.detalle,
+    amount: Number(row.monto),
+    category: row.categoria,
+    paymentMethod: row.medio_pago
+  };
+}
+
+function getCategoryCounts(type) {
   const counts = {};
   movements
     .filter((m) => m.type === type)
     .forEach((m) => {
       counts[m.category] = (counts[m.category] || 0) + 1;
     });
+  return counts;
+}
 
-  const list = categoriesByType[type].map((item, index) => ({
+function getSortedCategories(type) {
+  const counts = getCategoryCounts(type);
+  const list = (categoriesByType[type] || []).map((item, index) => ({
     ...item,
-    order: index,
-    count: counts[item.value] || 0
+    count: counts[item.value] || 0,
+    order: index
   }));
 
   list.sort((a, b) => {
     if (b.count !== a.count) return b.count - a.count;
-    return a.order - b.order;
+    if (a.order !== b.order) return a.order - b.order;
+    return String(a.value).localeCompare(String(b.value), "es");
   });
 
   return list;
+}
+
+async function loadReferenceData() {
+  const [{ data: catData, error: catError }, { data: payData, error: payError }] = await Promise.all([
+    supabase
+      .from("categorias")
+      .select("tipo, nombre, icono, orden, activa")
+      .eq("activa", true)
+      .order("orden", { ascending: true }),
+    supabase
+      .from("medios_pago")
+      .select("nombre, icono, orden, activa")
+      .eq("activa", true)
+      .order("orden", { ascending: true })
+  ]);
+
+  if (catError) throw catError;
+  if (payError) throw payError;
+
+  categoriesByType = {
+    gasto: (catData || [])
+      .filter((item) => item.tipo === "gasto")
+      .map((item) => ({
+        value: item.nombre,
+        icon: item.icono,
+        order: item.orden ?? 0
+      })),
+    ingreso: (catData || [])
+      .filter((item) => item.tipo === "ingreso")
+      .map((item) => ({
+        value: item.nombre,
+        icon: item.icono,
+        order: item.orden ?? 0
+      }))
+  };
+
+  paymentMethods = (payData || []).map((item) => ({
+    value: item.nombre,
+    icon: item.icono,
+    order: item.orden ?? 0
+  }));
+
+  if (!categoriesByType.gasto.length) {
+    categoriesByType.gasto = [
+      { value: "Alquiler", icon: "home", order: 1 },
+      { value: "Servicios", icon: "lightbulb", order: 2 },
+      { value: "Pago de tarjetas", icon: "credit_card", order: 3 },
+      { value: "Medicina", icon: "medical_services", order: 4 },
+      { value: "Kiosko", icon: "storefront", order: 5 },
+      { value: "Varios", icon: "inventory_2", order: 6 },
+      { value: "Combustible", icon: "local_gas_station", order: 7 },
+      { value: "Supermercado", icon: "shopping_cart", order: 8 }
+    ];
+  }
+
+  if (!categoriesByType.ingreso.length) {
+    categoriesByType.ingreso = [
+      { value: "Sueldo", icon: "payments", order: 1 },
+      { value: "Transferencia", icon: "account_balance", order: 2 },
+      { value: "Otro ingreso", icon: "add_circle", order: 3 }
+    ];
+  }
+
+  if (!paymentMethods.length) {
+    paymentMethods = [
+      { value: "Efectivo", icon: "paid", order: 1 },
+      { value: "Débito", icon: "account_balance_wallet", order: 2 },
+      { value: "Crédito", icon: "credit_card", order: 3 },
+      { value: "Transferencia", icon: "account_balance", order: 4 },
+      { value: "Mercado Pago", icon: "smartphone", order: 5 },
+      { value: "Otro", icon: "more_horiz", order: 6 }
+    ];
+  }
+}
+
+async function loadMovements() {
+  const { data, error } = await supabase
+    .from("movimientos")
+    .select("id, created_at, fecha, tipo, detalle, monto, categoria, medio_pago")
+    .order("fecha", { ascending: false })
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+
+  movements = (data || []).map(normalizeRow);
 }
 
 function renderTypeButtons() {
@@ -140,8 +218,9 @@ function renderTypeButtons() {
 
 function renderCategoryButtons() {
   const list = getSortedCategories(activeType);
+
   if (!list.some((item) => item.value === selectedCategory)) {
-    selectedCategory = list[0].value;
+    selectedCategory = list[0]?.value || "";
   }
 
   categoryGroup.innerHTML = "";
@@ -162,7 +241,7 @@ function renderCategoryButtons() {
 
 function renderPaymentButtons() {
   if (!paymentMethods.some((item) => item.value === selectedPayment)) {
-    selectedPayment = "Efectivo";
+    selectedPayment = paymentMethods[0]?.value || "Efectivo";
   }
 
   paymentGroup.innerHTML = "";
@@ -190,12 +269,10 @@ function computeStats() {
     .filter((m) => m.type === "gasto")
     .reduce((sum, m) => sum + Number(m.amount || 0), 0);
 
-  const balance = income - expense;
-
   return {
     income,
     expense,
-    balance,
+    balance: income - expense,
     count: movements.length
   };
 }
@@ -224,7 +301,7 @@ function renderHistory() {
         <span class="chip ${movement.type}">${movement.type === "ingreso" ? "Ingreso" : "Gasto"}</span>
         <span class="chip">${movement.category}</span>
         <span class="chip">${movement.paymentMethod}</span>
-        <span class="chip">${dateDisplay(movement.date)}</span>
+        <span class="chip">${dateDisplay(movement.fecha)}</span>
       </div>
       <strong class="desc">${movement.description}</strong>
       <div class="movement-actions">
@@ -249,14 +326,24 @@ function renderAll() {
   renderHistory();
 }
 
+function setPage(page) {
+  const isAdd = page === "gastos";
+  pageGastos.classList.toggle("active", isAdd);
+  pageResumen.classList.toggle("active", !isAdd);
+
+  topLinks.forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.page === page);
+  });
+}
+
 function resetForm() {
   editingId = null;
   descriptionInput.value = "";
   amountInput.value = "";
-  dateInput.value = dateISO();
+  dateInput.value = todayISO();
   activeType = "gasto";
-  selectedCategory = categoriesByType.gasto[0].value;
-  selectedPayment = "Efectivo";
+  selectedCategory = categoriesByType.gasto[0]?.value || "";
+  selectedPayment = paymentMethods[0]?.value || "Efectivo";
   movementTypeInput.value = "gasto";
   categoryInput.value = selectedCategory;
   paymentInput.value = selectedPayment;
@@ -267,7 +354,7 @@ function startEdit(movement) {
   editingId = movement.id;
   descriptionInput.value = movement.description;
   amountInput.value = movement.amount;
-  dateInput.value = movement.date;
+  dateInput.value = dateForInput(movement.fecha);
   activeType = movement.type;
   selectedCategory = movement.category;
   selectedPayment = movement.paymentMethod;
@@ -278,12 +365,17 @@ function startEdit(movement) {
   setPage("gastos");
 }
 
-function deleteMovement(id) {
+async function deleteMovement(id) {
   if (!confirm("¿Eliminar este movimiento?")) return;
-  movements = movements.filter((m) => m.id !== id);
-  saveMovements();
+
+  const { error } = await supabase.from("movimientos").delete().eq("id", id);
+  if (error) {
+    alert(error.message);
+    return;
+  }
+
   if (editingId === id) resetForm();
-  renderAll();
+  await refreshData();
 }
 
 function exportExcel() {
@@ -293,7 +385,7 @@ function exportExcel() {
   }
 
   const rows = movements.map((m) => ({
-    Fecha: dateDisplay(m.date),
+    Fecha: dateDisplay(m.fecha),
     Tipo: m.type === "ingreso" ? "Ingreso" : "Gasto",
     Categoria: m.category,
     Detalle: m.description,
@@ -310,10 +402,39 @@ function exportExcel() {
   XLSX.utils.book_append_sheet(wb, ws1, "Historial");
   XLSX.utils.book_append_sheet(wb, ws2, "Resumen");
 
-  XLSX.writeFile(wb, `gestor-de-gastos-${dateISO()}.xlsx`);
+  XLSX.writeFile(wb, `gestor-de-gastos-${todayISO()}.xlsx`);
 }
 
-form.addEventListener("submit", (e) => {
+async function refreshData() {
+  await loadMovements();
+  renderAll();
+}
+
+async function bootstrap() {
+  if (bootstrapped) return;
+  bootstrapped = true;
+  dateInput.value = todayISO();
+  await loadReferenceData();
+  await refreshData();
+  selectedCategory = getSortedCategories(activeType)[0]?.value || selectedCategory;
+  selectedPayment = paymentMethods[0]?.value || selectedPayment;
+  renderAll();
+}
+
+loginForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  authError.textContent = "";
+
+  const email = loginEmail.value.trim();
+  const password = loginPassword.value;
+
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) {
+    authError.textContent = error.message;
+  }
+});
+
+form.addEventListener("submit", async (e) => {
   e.preventDefault();
 
   const description = descriptionInput.value.trim();
@@ -322,22 +443,28 @@ form.addEventListener("submit", (e) => {
   if (!description || !amount || amount <= 0) return;
 
   const payload = {
-    id: editingId || uid(),
-    type: movementTypeInput.value,
-    description,
-    amount,
-    category: categoryInput.value,
-    paymentMethod: paymentInput.value,
-    date: dateInput.value || dateISO()
+    fecha: dateInput.value || todayISO(),
+    tipo: movementTypeInput.value,
+    detalle: description,
+    monto: amount,
+    categoria: categoryInput.value,
+    medio_pago: paymentInput.value
   };
 
+  let error = null;
+
   if (editingId) {
-    movements = movements.map((m) => (m.id === editingId ? payload : m));
+    ({ error } = await supabase.from("movimientos").update(payload).eq("id", editingId));
   } else {
-    movements.unshift(payload);
+    ({ error } = await supabase.from("movimientos").insert([payload]));
   }
 
-  saveMovements();
+  if (error) {
+    alert(error.message);
+    return;
+  }
+
+  await refreshData();
   resetForm();
 });
 
@@ -347,7 +474,8 @@ typeGroup.addEventListener("click", (e) => {
 
   activeType = btn.dataset.value;
   movementTypeInput.value = activeType;
-  selectedCategory = getSortedCategories(activeType)[0]?.value || selectedCategory;
+  const nextCategories = getSortedCategories(activeType);
+  selectedCategory = nextCategories[0]?.value || "";
   renderAll();
 });
 
@@ -374,8 +502,9 @@ historyList.addEventListener("click", (e) => {
   const delBtn = e.target.closest("[data-del]");
 
   if (editBtn) {
-    const movement = movements.find((m) => m.id === editBtn.dataset.edit);
+    const movement = movements.find((m) => String(m.id) === String(editBtn.dataset.edit));
     if (movement) startEdit(movement);
+    return;
   }
 
   if (delBtn) {
@@ -389,6 +518,25 @@ topLinks.forEach((btn) => {
 
 exportExcelBtn.addEventListener("click", exportExcel);
 
-dateInput.value = dateISO();
-setPage("gastos");
-renderAll();
+const { data: sessionData } = await supabase.auth.getSession();
+if (sessionData?.session) {
+  setAuthVisible(false);
+  await bootstrap();
+} else {
+  setAuthVisible(true);
+}
+
+supabase.auth.onAuthStateChange(async (_event, session) => {
+  if (session) {
+    setAuthVisible(false);
+    await bootstrap();
+  } else {
+    bootstrapped = false;
+    movements = [];
+    editingId = null;
+    authError.textContent = "";
+    setAuthVisible(true);
+  }
+});
+
+dateInput.value = todayISO();
