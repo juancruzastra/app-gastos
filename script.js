@@ -1,16 +1,9 @@
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
-const SUPABASE_URL = "https://miiskclwrvbmgqkdswro.supabase.co";
-const SUPABASE_ANON_KEY = "sb_publishable_PkTLIcz-j9wyXkuTjp_yvg_t8coIacO";
+const SUPABASE_URL = "PEGAR_URL_DE_SUPABASE";
+const SUPABASE_ANON_KEY = "PEGAR_PUBLISHABLE_KEY_DE_SUPABASE";
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-const authView = document.getElementById("authView");
-const appView = document.getElementById("appView");
-const loginForm = document.getElementById("loginForm");
-const loginEmail = document.getElementById("loginEmail");
-const loginPassword = document.getElementById("loginPassword");
-const authError = document.getElementById("authError");
 
 const form = document.getElementById("expenseForm");
 const descriptionInput = document.getElementById("description");
@@ -50,11 +43,6 @@ function uid() {
 
 function todayISO() {
   return new Date().toISOString().slice(0, 10);
-}
-
-function setAuthVisible(isAuth) {
-  authView.classList.toggle("hidden", !isAuth);
-  appView.classList.toggle("hidden", isAuth);
 }
 
 function setSelectedButton(group, value) {
@@ -421,19 +409,6 @@ async function bootstrap() {
   renderAll();
 }
 
-loginForm.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  authError.textContent = "";
-
-  const email = loginEmail.value.trim();
-  const password = loginPassword.value;
-
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) {
-    authError.textContent = error.message;
-  }
-});
-
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
 
@@ -518,25 +493,11 @@ topLinks.forEach((btn) => {
 
 exportExcelBtn.addEventListener("click", exportExcel);
 
-const { data: sessionData } = await supabase.auth.getSession();
-if (sessionData?.session) {
-  setAuthVisible(false);
-  await bootstrap();
-} else {
-  setAuthVisible(true);
-}
-
-supabase.auth.onAuthStateChange(async (_event, session) => {
-  if (session) {
-    setAuthVisible(false);
-    await bootstrap();
-  } else {
-    bootstrapped = false;
-    movements = [];
-    editingId = null;
-    authError.textContent = "";
-    setAuthVisible(true);
-  }
-});
-
 dateInput.value = todayISO();
+setPage("gastos");
+
+await loadReferenceData();
+await refreshData();
+selectedCategory = getSortedCategories(activeType)[0]?.value || "";
+selectedPayment = paymentMethods[0]?.value || "Efectivo";
+renderAll();
