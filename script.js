@@ -43,7 +43,7 @@ const categoriesByType = {
 
 const paymentMethods = [
   { value: "Efectivo", icon: "paid" },
-  { value: "Débito", icon: "debit_card" },
+  { value: "Débito", icon: "account_balance_wallet" },
   { value: "Crédito", icon: "credit_card" },
   { value: "Transferencia", icon: "account_balance" },
   { value: "Mercado Pago", icon: "smartphone" },
@@ -112,12 +112,34 @@ function iconSpan(name) {
   return `<span class="material-symbols-outlined">${name}</span>`;
 }
 
+function getSortedCategories(type) {
+  const counts = {};
+  movements
+    .filter((m) => m.type === type)
+    .forEach((m) => {
+      counts[m.category] = (counts[m.category] || 0) + 1;
+    });
+
+  const list = categoriesByType[type].map((item, index) => ({
+    ...item,
+    order: index,
+    count: counts[item.value] || 0
+  }));
+
+  list.sort((a, b) => {
+    if (b.count !== a.count) return b.count - a.count;
+    return a.order - b.order;
+  });
+
+  return list;
+}
+
 function renderTypeButtons() {
   setSelectedButton(typeGroup, activeType);
 }
 
 function renderCategoryButtons() {
-  const list = categoriesByType[activeType];
+  const list = getSortedCategories(activeType);
   if (!list.some((item) => item.value === selectedCategory)) {
     selectedCategory = list[0].value;
   }
@@ -129,10 +151,9 @@ function renderCategoryButtons() {
     btn.type = "button";
     btn.className = `icon-option ${selectedCategory === item.value ? "selected" : ""}`;
     btn.dataset.value = item.value;
-    btn.innerHTML = `
-      ${iconSpan(item.icon)}
-      <span class="btn-label">${item.value}</span>
-    `;
+    btn.title = item.value;
+    btn.setAttribute("aria-label", item.value);
+    btn.innerHTML = iconSpan(item.icon);
     categoryGroup.appendChild(btn);
   });
 
@@ -151,10 +172,9 @@ function renderPaymentButtons() {
     btn.type = "button";
     btn.className = `icon-option ${selectedPayment === item.value ? "selected" : ""}`;
     btn.dataset.value = item.value;
-    btn.innerHTML = `
-      ${iconSpan(item.icon)}
-      <span class="btn-label">${item.value}</span>
-    `;
+    btn.title = item.value;
+    btn.setAttribute("aria-label", item.value);
+    btn.innerHTML = iconSpan(item.icon);
     paymentGroup.appendChild(btn);
   });
 
@@ -190,7 +210,7 @@ function renderSummary() {
 
 function renderHistory() {
   if (movements.length === 0) {
-    historyList.innerHTML = '<div class="empty">todavía no hay movimientos cargados.</div>';
+    historyList.innerHTML = '<div class="empty">Todavía no hay movimientos cargados.</div>';
     return;
   }
 
@@ -201,7 +221,7 @@ function renderHistory() {
     item.className = `movement ${movement.type}`;
     item.innerHTML = `
       <div class="chips">
-        <span class="chip ${movement.type}">${movement.type}</span>
+        <span class="chip ${movement.type}">${movement.type === "ingreso" ? "Ingreso" : "Gasto"}</span>
         <span class="chip">${movement.category}</span>
         <span class="chip">${movement.paymentMethod}</span>
         <span class="chip">${dateDisplay(movement.date)}</span>
@@ -212,8 +232,8 @@ function renderHistory() {
           ${movement.type === "ingreso" ? "+" : "-"} ${money(movement.amount)}
         </div>
         <div class="btn-row">
-          <button type="button" class="ghost" data-edit="${movement.id}">editar</button>
-          <button type="button" class="danger" data-del="${movement.id}">borrar</button>
+          <button type="button" class="ghost" data-edit="${movement.id}">Editar</button>
+          <button type="button" class="danger" data-del="${movement.id}">Borrar</button>
         </div>
       </div>
     `;
@@ -274,7 +294,7 @@ function exportExcel() {
 
   const rows = movements.map((m) => ({
     Fecha: dateDisplay(m.date),
-    Tipo: m.type,
+    Tipo: m.type === "ingreso" ? "Ingreso" : "Gasto",
     Categoria: m.category,
     Detalle: m.description,
     "Medio de pago": m.paymentMethod,
@@ -290,7 +310,7 @@ function exportExcel() {
   XLSX.utils.book_append_sheet(wb, ws1, "Historial");
   XLSX.utils.book_append_sheet(wb, ws2, "Resumen");
 
-  XLSX.writeFile(wb, `app-gastos-${dateISO()}.xlsx`);
+  XLSX.writeFile(wb, `gestor-de-gastos-${dateISO()}.xlsx`);
 }
 
 form.addEventListener("submit", (e) => {
@@ -327,7 +347,7 @@ typeGroup.addEventListener("click", (e) => {
 
   activeType = btn.dataset.value;
   movementTypeInput.value = activeType;
-  selectedCategory = categoriesByType[activeType][0].value;
+  selectedCategory = getSortedCategories(activeType)[0]?.value || selectedCategory;
   renderAll();
 });
 
