@@ -134,6 +134,10 @@ function getSortedCategories(type) {
   return list;
 }
 
+function renderTypeButtons() {
+  setSelectedButton(typeGroup, activeType);
+}
+
 function renderCategoryButtons() {
   const list = getSortedCategories(activeType);
   if (!list.some((item) => item.value === selectedCategory)) {
@@ -149,10 +153,7 @@ function renderCategoryButtons() {
     btn.dataset.value = item.value;
     btn.title = item.value;
     btn.setAttribute("aria-label", item.value);
-    btn.innerHTML = `
-      ${iconSpan(item.icon)}
-      <span class="btn-caption">${item.value}</span>
-    `;
+    btn.innerHTML = iconSpan(item.icon);
     categoryGroup.appendChild(btn);
   });
 
@@ -173,15 +174,13 @@ function renderPaymentButtons() {
     btn.dataset.value = item.value;
     btn.title = item.value;
     btn.setAttribute("aria-label", item.value);
-    btn.innerHTML = `
-      ${iconSpan(item.icon)}
-      <span class="btn-caption">${item.value}</span>
-    `;
+    btn.innerHTML = iconSpan(item.icon);
     paymentGroup.appendChild(btn);
   });
 
   paymentInput.value = selectedPayment;
 }
+
 function computeStats() {
   const income = movements
     .filter((m) => m.type === "ingreso")
