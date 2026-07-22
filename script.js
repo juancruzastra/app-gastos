@@ -894,7 +894,3 @@ resetHistoryFilters?.addEventListener("click", () => {
   sortHistoryFilter.value = "newest";
   renderHistoryPage();
 });
-
-selectedMonth = currentMonthKey();
-populateMonthFilter();
-renderAll();
