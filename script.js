@@ -32,6 +32,7 @@ let movements = [];
 let editingId = null;
 let activeType = "gasto";
 let selectedCategory = "";
+let customCategoryOnce = "";
 let selectedPayment = "Efectivo";
 let categoriesByType = { gasto: [], ingreso: [] };
 let paymentMethods = [];
@@ -207,8 +208,12 @@ function renderTypeButtons() {
 
 function renderCategoryButtons() {
   const list = getSortedCategories(activeType);
+  const customIsActive =
+    customCategoryOnce && !list.some((item) => item.value === customCategoryOnce)
+      ? customCategoryOnce
+      : "";
 
-  if (!list.some((item) => item.value === selectedCategory)) {
+  if (!list.some((item) => item.value === selectedCategory) && !customIsActive) {
     selectedCategory = list[0]?.value || "";
   }
 
@@ -222,11 +227,23 @@ function renderCategoryButtons() {
     btn.title = item.value;
     btn.setAttribute("aria-label", item.value);
     btn.innerHTML = `
-    ${iconSpan(item.icon)}
-    <span class="icon-name">${item.value}</span>
-`;
+      ${iconSpan(item.icon)}
+      <span class="icon-name">${item.value}</span>
+    `;
     categoryGroup.appendChild(btn);
   });
+
+  const plusBtn = document.createElement("button");
+  plusBtn.type = "button";
+  plusBtn.className = `icon-option ${selectedCategory === customIsActive ? "selected" : ""}`;
+  plusBtn.dataset.value = "__custom__";
+  plusBtn.title = "Categoría excepcional";
+  plusBtn.setAttribute("aria-label", "Categoría excepcional");
+  plusBtn.innerHTML = `
+    ${iconSpan("add")}
+    <span class="icon-name">${customIsActive || "Otra"}</span>
+  `;
+  categoryGroup.appendChild(plusBtn);
 
   categoryInput.value = selectedCategory;
 }
@@ -333,6 +350,7 @@ function setPage(page) {
 
 function resetForm() {
   editingId = null;
+  customCategoryOnce = "";
   descriptionInput.value = "";
   amountInput.value = "";
   dateInput.value = todayISO();
@@ -465,7 +483,21 @@ categoryGroup.addEventListener("click", (e) => {
   const btn = e.target.closest(".icon-option");
   if (!btn) return;
 
+  if (btn.dataset.value === "__custom__") {
+    const value = prompt("Escribí la categoría excepcional");
+    const cleanValue = value?.trim();
+
+    if (!cleanValue) return;
+
+    customCategoryOnce = cleanValue;
+    selectedCategory = cleanValue;
+    categoryInput.value = cleanValue;
+    renderAll();
+    return;
+  }
+
   selectedCategory = btn.dataset.value;
+  customCategoryOnce = "";
   categoryInput.value = selectedCategory;
   renderAll();
 });
@@ -486,6 +518,9 @@ historyList.addEventListener("click", (e) => {
   if (editBtn) {
     const movement = movements.find((m) => String(m.id) === String(editBtn.dataset.edit));
     if (movement) startEdit(movement);
+    customCategoryOnce = categoriesByType[activeType]?.some((c) => c.value === movement.category)
+  ? ""
+  : movement.category;
     return;
   }
 
