@@ -157,6 +157,7 @@ async function loadReferenceData() {
 
   if (!categoriesByType.gasto.length) {
     categoriesByType.gasto = [
+      { value: "Ocio", icon: "sports_esports" },
       { value: "Alquiler", icon: "home", order: 1 },
       { value: "Servicios", icon: "lightbulb", order: 2 },
       { value: "Pago de tarjetas", icon: "credit_card", order: 3 },
@@ -220,7 +221,10 @@ function renderCategoryButtons() {
     btn.dataset.value = item.value;
     btn.title = item.value;
     btn.setAttribute("aria-label", item.value);
-    btn.innerHTML = iconSpan(item.icon);
+    btn.innerHTML = `
+    ${iconSpan(item.icon)}
+    <span class="icon-name">${item.value}</span>
+`;
     categoryGroup.appendChild(btn);
   });
 
