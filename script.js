@@ -543,3 +543,299 @@ await refreshData();
 selectedCategory = getSortedCategories(activeType)[0]?.value || "";
 selectedPayment = paymentMethods[0]?.value || "Efectivo";
 renderAll();
+
+const pageHistorial = document.getElementById("page-historial");
+const historyMonthlyList = document.getElementById("historyMonthlyList");
+const monthHistoryFilter = document.getElementById("monthHistoryFilter");
+const typeHistoryFilter = document.getElementById("typeHistoryFilter");
+const paymentHistoryFilter = document.getElementById("paymentHistoryFilter");
+const categoryHistoryFilter = document.getElementById("categoryHistoryFilter");
+const searchHistoryInput = document.getElementById("searchHistoryInput");
+const sortHistoryFilter = document.getElementById("sortHistoryFilter");
+const resetHistoryFilters = document.getElementById("resetHistoryFilters");
+
+function getMovementDate(m) {
+  return String(m.fecha ?? m.date ?? "").slice(0, 10);
+}
+
+function getMovementType(m) {
+  return String(m.type ?? m.tipo ?? "");
+}
+
+function getMovementDescription(m) {
+  return String(m.description ?? m.detalle ?? "");
+}
+
+function getMovementCategory(m) {
+  return String(m.category ?? m.categoria ?? "");
+}
+
+function getMovementPayment(m) {
+  return String(m.paymentMethod ?? m.medio_pago ?? "");
+}
+
+function getMovementAmount(m) {
+  return Number(m.amount ?? m.monto ?? 0);
+}
+
+function monthKeyFromMovement(m) {
+  const date = getMovementDate(m);
+  return date ? date.slice(0, 7) : "";
+}
+
+function monthLabel(monthKey) {
+  if (!monthKey) return "Sin fecha";
+  const [year, month] = monthKey.split("-").map(Number);
+  const d = new Date(year, month - 1, 1);
+  const label = d.toLocaleDateString("es-AR", {
+    month: "long",
+    year: "numeric"
+  });
+  return label.charAt(0).toUpperCase() + label.slice(1);
+}
+
+function computeStatsForList(list) {
+  const income = list
+    .filter((m) => getMovementType(m) === "ingreso")
+    .reduce((sum, m) => sum + getMovementAmount(m), 0);
+
+  const expense = list
+    .filter((m) => getMovementType(m) === "gasto")
+    .reduce((sum, m) => sum + getMovementAmount(m), 0);
+
+  return {
+    income,
+    expense,
+    balance: income - expense,
+    count: list.length
+  };
+}
+
+function setSelectValueIfExists(selectEl, value) {
+  const exists = Array.from(selectEl.options).some((opt) => opt.value === value);
+  selectEl.value = exists ? value : "all";
+}
+
+function populateHistoryFilters() {
+  const currentMonth = monthHistoryFilter.value || "all";
+  const currentType = typeHistoryFilter.value || "all";
+  const currentPayment = paymentHistoryFilter.value || "all";
+  const currentCategory = categoryHistoryFilter.value || "all";
+  const currentSort = sortHistoryFilter.value || "newest";
+
+  const months = [...new Set(movements.map(monthKeyFromMovement).filter(Boolean))]
+    .sort((a, b) => b.localeCompare(a));
+
+  monthHistoryFilter.innerHTML =
+    `<option value="all">Todos los meses</option>` +
+    months.map((key) => `<option value="${key}">${monthLabel(key)}</option>`).join("");
+
+  monthHistoryFilter.value = currentMonth;
+
+  const paymentValues = [...new Set(movements.map(getMovementPayment).filter(Boolean))]
+    .sort((a, b) => a.localeCompare(b, "es"));
+
+  paymentHistoryFilter.innerHTML =
+    `<option value="all">Todos los pagos</option>` +
+    paymentValues.map((value) => `<option value="${value}">${value}</option>`).join("");
+
+  setSelectValueIfExists(paymentHistoryFilter, currentPayment);
+
+  const categoryValues = [...new Set(movements.map(getMovementCategory).filter(Boolean))]
+    .sort((a, b) => a.localeCompare(b, "es"));
+
+  categoryHistoryFilter.innerHTML =
+    `<option value="all">Todas las categorías</option>` +
+    categoryValues.map((value) => `<option value="${value}">${value}</option>`).join("");
+
+  setSelectValueIfExists(categoryHistoryFilter, currentCategory);
+
+  typeHistoryFilter.value = currentType;
+  sortHistoryFilter.value = currentSort;
+}
+
+function buildFilteredHistory() {
+  let list = [...movements];
+
+  if (monthHistoryFilter.value !== "all") {
+    list = list.filter((m) => monthKeyFromMovement(m) === monthHistoryFilter.value);
+  }
+
+  if (typeHistoryFilter.value !== "all") {
+    list = list.filter((m) => getMovementType(m) === typeHistoryFilter.value);
+  }
+
+  if (paymentHistoryFilter.value !== "all") {
+    list = list.filter((m) => getMovementPayment(m) === paymentHistoryFilter.value);
+  }
+
+  if (categoryHistoryFilter.value !== "all") {
+    list = list.filter((m) => getMovementCategory(m) === categoryHistoryFilter.value);
+  }
+
+  const term = searchHistoryInput.value.trim().toLowerCase();
+  if (term) {
+    list = list.filter((m) => {
+      const haystack = [
+        getMovementDescription(m),
+        getMovementCategory(m),
+        getMovementPayment(m),
+        getMovementDate(m),
+        getMovementType(m)
+      ]
+        .join(" ")
+        .toLowerCase();
+
+      return haystack.includes(term);
+    });
+  }
+
+  switch (sortHistoryFilter.value) {
+    case "oldest":
+      list.sort((a, b) => getMovementDate(a).localeCompare(getMovementDate(b)));
+      break;
+    case "amount_desc":
+      list.sort((a, b) => getMovementAmount(b) - getMovementAmount(a));
+      break;
+    case "amount_asc":
+      list.sort((a, b) => getMovementAmount(a) - getMovementAmount(b));
+      break;
+    case "newest":
+    default:
+      list.sort((a, b) => getMovementDate(b).localeCompare(getMovementDate(a)));
+      break;
+  }
+
+  return list;
+}
+
+function createHistoryCard(movement) {
+  const type = getMovementType(movement) === "ingreso" ? "ingreso" : "gasto";
+
+  const card = document.createElement("div");
+  card.className = `movement ${type}`;
+  card.innerHTML = `
+    <div class="chips">
+      <span class="chip ${type}">${type === "ingreso" ? "Ingreso" : "Gasto"}</span>
+      <span class="chip">${getMovementCategory(movement)}</span>
+      <span class="chip">${getMovementPayment(movement)}</span>
+      <span class="chip">${dateDisplay(getMovementDate(movement))}</span>
+    </div>
+
+    <strong class="desc">${getMovementDescription(movement)}</strong>
+
+    <div class="movement-actions">
+      <div class="amount ${type}">
+        ${type === "ingreso" ? "+" : "-"} ${money(getMovementAmount(movement))}
+      </div>
+      <div class="btn-row">
+        <button type="button" class="ghost" data-edit="${movement.id}">Editar</button>
+        <button type="button" class="danger" data-del="${movement.id}">Borrar</button>
+      </div>
+    </div>
+  `;
+  return card;
+}
+
+function renderHistoryPage() {
+  if (!historyMonthlyList) return;
+
+  populateHistoryFilters();
+
+  const filtered = buildFilteredHistory();
+
+  if (filtered.length === 0) {
+    historyMonthlyList.innerHTML = '<div class="empty">No hay movimientos con esos filtros.</div>';
+    return;
+  }
+
+  const grouped = {};
+  filtered.forEach((movement) => {
+    const key = monthKeyFromMovement(movement) || "sin-fecha";
+    if (!grouped[key]) grouped[key] = [];
+    grouped[key].push(movement);
+  });
+
+  const monthKeys = Object.keys(grouped).sort((a, b) => {
+    if (a === "sin-fecha") return 1;
+    if (b === "sin-fecha") return -1;
+    return b.localeCompare(a);
+  });
+
+  historyMonthlyList.innerHTML = "";
+
+  monthKeys.forEach((key) => {
+    const items = grouped[key];
+    const stats = computeStatsForList(items);
+
+    const block = document.createElement("div");
+    block.className = "month-block";
+    block.innerHTML = `
+      <div class="month-head">
+        <div>
+          <div class="month-title">${key === "sin-fecha" ? "Sin fecha" : monthLabel(key)}</div>
+          <div class="muted">${items.length} movimientos</div>
+        </div>
+        <div class="month-balance">${money(stats.balance)}</div>
+      </div>
+
+      <div class="month-stats">
+        <div class="mini-stat">
+          <span>ingresos</span>
+          <strong>${money(stats.income)}</strong>
+        </div>
+        <div class="mini-stat">
+          <span>gastos</span>
+          <strong>${money(stats.expense)}</strong>
+        </div>
+        <div class="mini-stat">
+          <span>balance</span>
+          <strong>${money(stats.balance)}</strong>
+        </div>
+      </div>
+
+      <div class="list month-list"></div>
+    `;
+
+    const listEl = block.querySelector(".month-list");
+    items.forEach((movement) => listEl.appendChild(createHistoryCard(movement)));
+
+    historyMonthlyList.appendChild(block);
+  });
+}
+
+function updateHistoryTabUI() {
+  renderHistoryPage();
+}
+
+const originalSetPage = setPage;
+setPage = function (page) {
+  originalSetPage(page);
+
+  if (page === "historial") {
+    renderHistoryPage();
+  }
+};
+
+const originalRenderAll = renderAll;
+renderAll = function () {
+  originalRenderAll();
+  renderHistoryPage();
+};
+
+monthHistoryFilter?.addEventListener("change", renderHistoryPage);
+typeHistoryFilter?.addEventListener("change", renderHistoryPage);
+paymentHistoryFilter?.addEventListener("change", renderHistoryPage);
+categoryHistoryFilter?.addEventListener("change", renderHistoryPage);
+sortHistoryFilter?.addEventListener("change", renderHistoryPage);
+searchHistoryInput?.addEventListener("input", renderHistoryPage);
+
+resetHistoryFilters?.addEventListener("click", () => {
+  monthHistoryFilter.value = "all";
+  typeHistoryFilter.value = "all";
+  paymentHistoryFilter.value = "all";
+  categoryHistoryFilter.value = "all";
+  searchHistoryInput.value = "";
+  sortHistoryFilter.value = "newest";
+  renderHistoryPage();
+});
