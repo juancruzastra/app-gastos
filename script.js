@@ -339,13 +339,18 @@ function renderAll() {
 }
 
 function setPage(page) {
-  const isAdd = page === "gastos";
-  pageGastos.classList.toggle("active", isAdd);
-  pageResumen.classList.toggle("active", !isAdd);
+  pageGastos.classList.toggle("active", page === "gastos");
+  pageResumen.classList.toggle("active", page === "resumen");
+  pageHistorial.classList.toggle("active", page === "historial");
 
   topLinks.forEach((btn) => {
     btn.classList.toggle("active", btn.dataset.page === page);
   });
+
+  if (page === "historial") {
+    renderHistoryPage();
+  }
+}
 }
 
 function resetForm() {
