@@ -245,7 +245,10 @@ function renderPaymentButtons() {
     btn.dataset.value = item.value;
     btn.title = item.value;
     btn.setAttribute("aria-label", item.value);
-    btn.innerHTML = iconSpan(item.icon);
+    btn.innerHTML = `
+    ${iconSpan(item.icon)}
+    <span class="icon-name">${item.value}</span>
+`;
     paymentGroup.appendChild(btn);
   });
 
