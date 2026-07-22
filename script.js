@@ -27,8 +27,6 @@ const typeGroup = document.getElementById("typeGroup");
 const categoryGroup = document.getElementById("categoryGroup");
 const paymentGroup = document.getElementById("paymentGroup");
 const exportExcelBtn = document.getElementById("exportExcelBtn");
-const monthFilter = document.getElementById("monthFilter");
-let selectedMonth = currentMonthKey();
 
 let movements = [];
 let editingId = null;
@@ -70,58 +68,6 @@ function dateDisplay(iso) {
   if (!iso) return "";
   const str = String(iso);
   return str.length >= 10 ? str.slice(0, 10).split("-").reverse().join("/") : str;
-}
-
-function currentMonthKey() {
-  const today = new Date();
-  return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
-}
-
-function getMovementDate(m) {
-  return String(m.fecha ?? m.date ?? "").slice(0, 10);
-}
-
-function monthKeyFromMovement(m) {
-  const date = getMovementDate(m);
-  return date ? date.slice(0, 7) : "";
-}
-
-function monthLabel(monthKey) {
-  if (!monthKey) return "Sin fecha";
-  const [year, month] = monthKey.split("-").map(Number);
-  const d = new Date(year, month - 1, 1);
-  const label = d.toLocaleDateString("es-AR", {
-    month: "long",
-    year: "numeric"
-  });
-  return label.charAt(0).toUpperCase() + label.slice(1);
-}
-
-function populateMonthFilter() {
-  const months = [...new Set(movements.map(monthKeyFromMovement).filter(Boolean))]
-    .sort((a, b) => b.localeCompare(a));
-
-  monthFilter.innerHTML = "";
-
-  if (!months.includes(selectedMonth)) {
-    selectedMonth = currentMonthKey();
-  }
-
-  const currentOption = document.createElement("option");
-  currentOption.value = selectedMonth;
-  currentOption.textContent = monthLabel(selectedMonth);
-  monthFilter.appendChild(currentOption);
-
-  months
-    .filter((m) => m !== selectedMonth)
-    .forEach((key) => {
-      const option = document.createElement("option");
-      option.value = key;
-      option.textContent = monthLabel(key);
-      monthFilter.appendChild(option);
-    });
-
-  monthFilter.value = selectedMonth;
 }
 
 function dateForInput(value) {
@@ -385,7 +331,6 @@ function renderHistory() {
 }
 
 function renderAll() {
-  populateMonthFilter();
   renderTypeButtons();
   renderCategoryButtons();
   renderPaymentButtons();
