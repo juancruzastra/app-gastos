@@ -129,63 +129,19 @@
               </div>
             </div>
 
+            <div class="card">
+              <div class="section-head">
+                <div>
+                  <h2 class="section-title">Historial</h2>
+                  <p class="muted">Editar o borrar movimientos</p>
+                </div>
+              </div>
+
+              <div id="historyList" class="list">
+                <div class="empty">Todavía no hay movimientos cargados.</div>
+              </div>
+            </div>
           </section>
-          <section id="page-historial" class="page">
-  <div class="card">
-    <div class="section-head">
-      <div>
-        <h2 class="section-title">Historial</h2>
-        <p class="muted">Movimientos agrupados por mes</p>
-      </div>
-      <button type="button" id="resetHistoryFilters" class="secondary">Limpiar filtros</button>
-    </div>
-
-    <div class="filters">
-      <div class="filters-row">
-        <select id="monthHistoryFilter" class="select">
-          <option value="all">Todos los meses</option>
-        </select>
-
-        <select id="typeHistoryFilter" class="select">
-          <option value="all">Todos los tipos</option>
-          <option value="gasto">Gastos</option>
-          <option value="ingreso">Ingresos</option>
-        </select>
-      </div>
-
-      <div class="filters-row">
-        <select id="paymentHistoryFilter" class="select">
-          <option value="all">Todos los pagos</option>
-        </select>
-
-        <select id="categoryHistoryFilter" class="select">
-          <option value="all">Todas las categorías</option>
-        </select>
-      </div>
-
-      <input
-        id="searchHistoryInput"
-        class="search"
-        type="search"
-        placeholder="Buscar detalle, categoría o pago..."
-        autocomplete="off"
-      />
-
-      <div class="filters-row">
-        <select id="sortHistoryFilter" class="select">
-          <option value="newest">Más reciente</option>
-          <option value="oldest">Más antiguo</option>
-          <option value="amount_desc">Mayor monto</option>
-          <option value="amount_asc">Menor monto</option>
-        </select>
-      </div>
-    </div>
-
-    <div id="historyMonthlyList" class="history-months">
-      <div class="empty">Todavía no hay movimientos cargados.</div>
-    </div>
-  </div>
-</section>
 
           <section id="page-historial" class="page">
             <div class="card">
