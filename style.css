@@ -179,8 +179,10 @@ input:focus {
   color: var(--text);
   cursor: pointer;
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
+  gap: 6px;
   padding: 10px 8px;
   transition: transform 0.15s ease, border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
 }
@@ -436,4 +438,17 @@ input:focus {
   margin: 0;
   font-size: 13px;
   color: #fca5a5;
+}
+
+.icon-name{
+    margin-top:6px;
+    font-size:10px;
+    color:#94a3b8;
+    font-weight:600;
+    text-align:center;
+    line-height:1.1;
+}
+
+.icon-option.selected .icon-name{
+    color:#ffffff;
 }
